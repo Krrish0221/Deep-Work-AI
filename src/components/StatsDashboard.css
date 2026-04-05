@@ -1,0 +1,15 @@
+.stats-container { display: flex; flex-direction: column; gap: 1.5rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+.stat-card { padding: 1.25rem; display: flex; align-items: center; gap: 1rem; transition: var(--transition-smooth); }
+.stat-icon-bg { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.stat-icon-bg.focus { background: rgba(99, 102, 241, 0.1); color: var(--accent-primary); }
+.stat-icon-bg.distraction { background: rgba(239, 68, 68, 0.1); color: var(--accent-danger); }
+.stat-icon-bg.probability { background: rgba(168, 85, 247, 0.1); color: var(--accent-secondary); }
+.stat-info { display: flex; flex-direction: column; }
+.stat-label { font-size: 0.75rem; color: var(--text-muted); }
+.stat-value { font-size: 1.1rem; font-weight: 700; color: #fff; }
+.chart-card { padding: 1.5rem; }
+.chart-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
+.chart-header h3 { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 600; }
+.chart-subtitle { font-size: 0.7rem; color: var(--text-muted); }
+.chart-container { height: 200px; }
