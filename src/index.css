@@ -1,20 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
 :root {
-  --bg-dark: #0a0b10;
-  --bg-card: rgba(255, 255, 255, 0.03);
-  --bg-glass: rgba(10, 11, 16, 0.7);
-  --accent-primary: #6366f1;
-  --accent-secondary: #a855f7;
-  --accent-success: #10b981;
-  --accent-warning: #f59e0b;
-  --accent-danger: #ef4444;
-  --text-main: #ffffff;
+  /* Dynamic Brand Colors (handled by JS context) */
+  --brand-primary: #6366f1;
+  --brand-primary-glow: rgba(99, 102, 241, 0.3);
+  --text-on-brand: #ffffff;
+  
+  --brand-secondary: #a855f7;
+  
+  /* Status Colors */
+  --status-good: #10b981;
+  --status-danger: #ef4444;
+  --status-info: #3b82f6;
+  
+  /* Backgrounds */
+  --bg-dark: #09090b;
+  --bg-card: #121214;
+  --bg-glass: rgba(18, 18, 20, 0.7);
+  
+  /* Text */
+  --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --border-glass: rgba(255, 255, 255, 0.1);
-  --glass-blur: 12px;
+  --text-dim: #64748b;
+  
+  /* Borders */
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.15);
+  
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  
+  /* Shadows */
+  --shadow-glow: 0 0 20px var(--brand-primary-glow);
+  
+  /* Transitions */
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 * {
   margin: 0;
@@ -23,38 +48,85 @@
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-dark);
   color: var(--text-main);
-  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* App handle its own scroll */
 }
 
+h1, h2, h3, h4 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Glassmorphism Global Utilities */
 .glass-effect {
-  background: var(--bg-card);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
-  border-radius: 16px;
+  border-radius: 20px;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-@keyframes pulse-danger {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+/* Common UI Elements */
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.alert-pulse {
-  animation: pulse-danger 2s infinite;
-  border-color: var(--accent-danger) !important;
+.badge-primary { background: var(--brand-primary-glow); color: var(--brand-primary); border: 1px solid rgba(99, 102, 241, 0.2); }
+.badge-success { background: rgba(16, 185, 129, 0.1); color: var(--status-good); border: 1px solid rgba(16, 185, 129, 0.2); }
+.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--status-danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+@keyframes pulse-soft {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+/* Transitions */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-glass);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-light);
+}
+
+.text-good { color: var(--status-good); }
+.text-danger { color: var(--status-danger); }
+.text-xs { font-size: 0.75rem; color: var(--text-dim); }

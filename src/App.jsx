@@ -1,183 +1,131 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   History, 
-  Settings, 
+  Settings as SettingsIcon, 
   LogOut, 
   User, 
   Bell, 
   Search,
   ShieldCheck,
-  Clock
+  X
 } from 'lucide-react';
-import WebcamDetector from './components/WebcamDetector';
-import StatsDashboard from './components/StatsDashboard';
+import Dashboard from './pages/Dashboard';
+import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import './App.css';
 
-const API_BASE_URL = "http://localhost:5000/api";
+const NotificationDropdown = () => {
+  const { notifications, setShowNotifications, clearNotification } = useSettings();
+  
+  return (
+    <div className="notification-dropdown glass-effect">
+      <div className="dropdown-header">
+        <h4>Recent Insights</h4>
+        <button className="btn-icon-xs" onClick={() => setShowNotifications(false)}><X size={14} /></button>
+      </div>
+      <div className="notification-list">
+        {notifications.map(n => (
+          <div key={n.id} className={`notification-item ${n.type}`}>
+            <div className={`status-dot ${n.type}`}></div>
+            <div className="notif-content">
+              <p>{n.text}</p>
+              <span className="notif-time">{n.time}</span>
+            </div>
+          </div>
+        ))}
+        {notifications.length === 0 && <p className="empty-notif">No new notifications</p>}
+      </div>
+      <button className="btn-text-full">View All Notifications</button>
+    </div>
+  );
+};
 
-function App() {
-  const [sessionActive, setSessionActive] = useState(false);
-  const [focusTime, setFocusTime] = useState(0);
-  const [distractionCount, setDistractionCount] = useState(0);
-  const [currentProb, setCurrentProb] = useState(0);
-  const [sessionData, setSessionData] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [status, setStatus] = useState("Idle");
-
-  // Load history from backend
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/sessions`);
-        setHistory(response.data.reverse());
-      } catch (err) {
-        console.error("Backend offline, using local state");
-      }
-    };
-    fetchHistory();
-  }, []);
-
-  // Timer logic
-  useEffect(() => {
-    let interval;
-    if (sessionActive) {
-      interval = setInterval(() => {
-        setFocusTime(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [sessionActive]);
-
-  const handleStatusChange = useCallback((newStatus, probability) => {
-    setStatus(newStatus);
-    setCurrentProb(probability);
-    
-    // Add data point for chart (keep last 50 points)
-    setSessionData(prev => {
-      const newData = [...prev, { time: new Date().toLocaleTimeString(), prob: Math.round(probability * 100) }];
-      return newData.slice(-50);
-    });
-  }, []);
-
-  const handleDistractionDetected = useCallback(() => {
-    setDistractionCount(prev => prev + 1);
-  }, []);
-
-  const handleSessionToggle = (isActive) => {
-    setSessionActive(isActive);
-    if (!isActive && focusTime > 0) {
-      // Save session to backend
-      const sessionInfo = {
-        duration: focusTime,
-        distractions: distractionCount,
-        averageConfidence: sessionData.reduce((acc, curr) => acc + curr.prob, 0) / sessionData.length || 0
-      };
-      
-      axios.post(`${API_BASE_URL}/sessions`, sessionInfo)
-        .then(res => {
-          setHistory(prev => [res.data, ...prev]);
-        })
-        .catch(err => console.error("Failed to save session"));
-        
-      // Reset for next session
-      setFocusTime(0);
-      setDistractionCount(0);
-      setSessionData([]);
-    }
-  };
+const AppContent = () => {
+  const { toggleNotifications, showNotifications, notifications } = useSettings();
 
   return (
-    <div className="app-layout">
-      {/* Sidebar */}
-      <aside className="sidebar glass-effect">
-        <div className="logo-section">
-          <div className="logo-icon"><ShieldCheck size={24} /></div>
-          <h2>DeepWork</h2>
-        </div>
-        
-        <nav className="nav-menu">
-          <div className="nav-item active"><LayoutDashboard size={20} /> Dashboard</div>
-          <div className="nav-item"><History size={20} /> Analytics</div>
-          <div className="nav-item"><Settings size={20} /> Settings</div>
-        </nav>
-
-        <div className="user-profile">
-          <div className="avatar"><User size={20} /></div>
-          <div className="user-info">
-            <span className="user-name">Krish</span>
-            <span className="user-role">Premium User</span>
-          </div>
-          <LogOut size={18} className="logout-btn" />
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="main-content">
-        <header className="top-bar">
-          <div className="search-box glass-effect">
-            <Search size={18} />
-            <input type="text" placeholder="Search analytics..." />
-          </div>
-          
-          <div className="top-actions">
-            <div className="action-btn glass-effect"><Bell size={18} /></div>
-            <div className="date-display glass-effect">{new Date().toLocaleDateString()}</div>
-          </div>
-        </header>
-
-        <div className="dashboard-content">
-          <div className="welcome-header">
-            <h1>Welcome back, <span className="gradient-text">Krish</span></h1>
-            <p>Your productivity score is 12% higher than yesterday.</p>
-          </div>
-
-          <div className="dashboard-grid">
-            {/* Left Col: Detector */}
-            <div className="grid-left">
-              <WebcamDetector 
-                onStatusChange={handleStatusChange}
-                onDistractionDetected={handleDistractionDetected}
-                onSessionToggle={handleSessionToggle}
-              />
+    <BrowserRouter>
+      <div className="app-layout">
+        {/* Sidebar */}
+        <aside className="sidebar glass-effect">
+          <div className="sidebar-top">
+            <div className="logo-section">
+              <div className="logo-icon"><ShieldCheck size={24} strokeWidth={2.5} /></div>
+              <h2>DeepWork</h2>
             </div>
+            
+            <nav className="nav-menu">
+              <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <LayoutDashboard size={20} />
+                <span>Dashboard</span>
+              </NavLink>
+              <NavLink to="/analytics" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <History size={20} />
+                <span>Analytics</span>
+              </NavLink>
+              <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <SettingsIcon size={20} />
+                <span>Settings</span>
+              </NavLink>
+            </nav>
+          </div>
 
-            {/* Right Col: Stats */}
-            <div className="grid-right">
-              <StatsDashboard 
-                sessionData={sessionData}
-                distractionCount={distractionCount}
-                focusTime={focusTime}
-                currentProb={currentProb}
-              />
-              
-              <div className="recent-history glass-effect">
-                <div className="history-header">
-                  <h3>Recent Sessions</h3>
-                  <button className="text-btn">View All</button>
+          <div className="sidebar-bottom">
+            <div className="user-profile">
+              <div className="avatar"><User size={20} /></div>
+              <div className="user-info">
+                <span className="user-name">Krish</span>
+                <span className="badge badge-primary">Premium User</span>
+              </div>
+              <LogOut size={18} className="logout-btn" />
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="main-content">
+          <header className="top-bar">
+            <div className="search-box glass-effect">
+              <Search size={18} strokeWidth={2} />
+              <input type="text" placeholder="Search insights..." />
+            </div>
+            
+            <div className="top-actions">
+              <div className="notification-wrapper">
+                <div 
+                  className={`action-btn glass-effect notification-indicator ${showNotifications ? 'active-bell' : ''}`}
+                  onClick={toggleNotifications}
+                >
+                  <Bell size={18} />
+                  {notifications.length > 0 && <span className="notification-dot"></span>}
                 </div>
-                <div className="history-list">
-                  {history.slice(0, 4).map(session => (
-                    <div key={session.id} className="history-item">
-                      <div className="history-icon"><Clock size={16} /></div>
-                      <div className="history-details">
-                        <span className="h-date">{new Date(session.timestamp).toLocaleDateString()}</span>
-                        <span className="h-duration">{Math.floor(session.duration / 60)}m {session.duration % 60}s</span>
-                      </div>
-                      <div className="history-stats">
-                        <span className="h-distraction">-{session.distractions}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {history.length === 0 && <p className="empty-msg">No session history found.</p>}
-                </div>
+                {showNotifications && <NotificationDropdown />}
+              </div>
+              <div className="date-info">
+                {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
               </div>
             </div>
-          </div>
-        </div>
-      </main>
-    </div>
+          </header>
+
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+};
+
+function App() {
+  return (
+    <SettingsProvider>
+      <AppContent />
+    </SettingsProvider>
   );
 }
 
