@@ -3,30 +3,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
+  background: var(--bg-page);
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 0.5rem;
-}
+.page-header h1 { color: var(--text-primary); }
+.page-header p { color: var(--text-muted); }
 
-.header-left h1 { margin-bottom: 0.250rem; }
-.header-left p { color: var(--text-muted); font-size: 0.95rem; }
-
-.header-right {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-/* Segmented Control */
+/* Segmented Control Theme Sync */
 .segmented-control {
   padding: 4px;
   display: flex;
   gap: 4px;
   border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .segmented-control button {
@@ -34,250 +24,96 @@
   border-radius: 9px;
   border: none;
   background: transparent;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-weight: 700;
-  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.segmented-control button:hover { color: #fff; background: rgba(255,255,255,0.03); }
-.segmented-control button.active { background: var(--brand-primary); color: #fff; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
-
-/* Layout Wrappers */
-.analytics-layout-grid-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.segmented-control button.active { 
+  background: var(--brand-primary); 
+  color: #fff; 
+  box-shadow: 0 4px 15px var(--brand-primary-glow); 
 }
 
-.analytics-top-section {
-  display: grid;
-  grid-template-columns: 2.3fr 1fr;
-  gap: 1.5rem;
-  align-items: stretch;
+/* Summary Cards */
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.summary-card { 
+  padding: 1.5rem; 
+  background: var(--bg-card); 
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  border-radius: 20px;
 }
 
-.analytics-main-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.summary-card h2 { color: var(--text-primary); font-weight: 900; }
+.summary-card .stat-label { color: var(--text-dim); }
+
+/* Heatmap Fix - ENSURE HORIZONTAL GRID */
+.heatmap-card { 
+  padding: 2rem; 
+  background: var(--bg-card); 
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
 }
 
-/* Row 1: Summary Cards */
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.summary-card {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  justify-content: space-between;
-  min-height: 140px;
-}
-
-.summary-card .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 800; }
-.summary-card h2 { font-size: 1.6rem; font-weight: 900; line-height: 1; }
-
-.summary-card .stat-progress-bg { height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; }
-.summary-card .stat-progress-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
-
-/* Charts Area */
-.charts-grid-two {
-  display: grid;
-  grid-template-columns: 1.8fr 1.1fr;
-  gap: 1.5rem;
-}
-
-.chart-large, .chart-small { padding: 2rem; }
-.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
-.view-details-btn { font-size: 0.65rem; font-weight: 900; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: 0.2s; }
-.view-details-btn:hover { color: #fff; }
-
-/* Donut Area */
-.donut-wrap { position: relative; margin: 1rem 0; width: 100%; display: flex; justify-content: center; }
-.donut-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.donut-legend { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1.5rem; }
-.legend-item { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; font-weight: 600; }
-.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-/* Tooltips */
-.custom-chart-tooltip {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 1rem;
-  border-radius: 12px;
-  box-shadow: var(--shadow-xl);
-  z-index: 1000;
-}
-.tooltip-label { margin-bottom: 0.75rem; color: var(--brand-primary); font-size: 0.7rem; font-weight: 900; text-transform: uppercase; }
-
-/* RECONSTRUCTED HEATMAP CSS */
-.heatmap-card { padding: 2rem; min-height: 480px; }
-.heatmap-layout-wrapper {
-  display: flex;
-  gap: 2rem;
-  margin-top: 2rem;
-  width: 100%;
-}
-
-.hours-axis-labels {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 2.5rem 0 0.5rem;
-  height: 300px;
-  color: var(--text-dim);
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.heatmap-grid-cells {
-  display: flex;
-  flex: 1;
-  gap: 1.25rem;
-  justify-content: space-between;
-}
-
-.heatmap-day-column {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-}
-
-.heatmap-day-header {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--text-dim);
-  text-align: center;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-}
-
-.heatmap-cell-v4 {
-  width: 100%;
-  height: 12px;
-  border-radius: 2px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.intensity-1 { background: rgba(99, 102, 241, 0.25) !important; }
-.intensity-2 { background: rgba(99, 102, 241, 0.50) !important; }
-.intensity-3 { background: rgba(99, 102, 241, 0.75) !important; }
-.intensity-4 { background: rgba(99, 102, 241, 1.0) !important; box-shadow: 0 0 12px rgba(99, 102, 241, 0.5); }
-
-.heatmap-footer-v4 {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem; 
-  margin-top: 2.5rem;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-.legend-cell { 
-  width: 12px; 
-  height: 12px; 
-  border-radius: 2px; 
-  flex-shrink: 0;
-}
-
-/* Sidebar & Insights */
-.analytics-sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
-.sidebar-card { padding: 2rem; display: flex; flex-direction: column; min-height: 280px; }
-
-/* Smaller accent dots */
-.custom-accent-dot { 
-  width: 6px; 
-  height: 6px; 
-  border-radius: 50%; 
-  margin-top: 0.55rem; 
-  flex-shrink: 0;
-}
-.custom-accent-dot.info { background: var(--brand-primary); box-shadow: 0 0 8px var(--brand-primary-glow); }
-.custom-accent-dot.danger { background: var(--status-danger); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
-.custom-accent-dot.success { background: var(--status-good); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
-
-/* SVG Progress Restoration & Score-Gauge Layout Fix */
-.score-gauge { 
-  align-items: center; 
-  justify-content: flex-start; /* Move to top of card */
+.heatmap-layout-wrapper { 
+  display: flex !important; 
+  flex-direction: row !important; /* Force horizontal */
   gap: 2rem; 
-  padding: 2rem;
+  margin-top: 2rem; 
+  width: 100%; 
+  align-items: flex-start;
 }
 
-.gauge-wrap { 
-  position: relative; 
-  width: 160px; 
-  height: 160px; 
-  margin: 0 auto;
-}
-
-.circular-progress circle { fill: none; stroke-linecap: round; }
-.circular-progress .bg { stroke: rgba(255, 255, 255, 0.05); stroke-width: 10; }
-.circular-progress .fg { 
-  stroke: var(--brand-primary) !important; 
-  stroke-width: 10;
-  stroke-dasharray: 283; 
-  transition: stroke-dashoffset 1s ease; 
-}
-
-.gauge-text { 
-  position: absolute; 
-  top: 50%; 
-  left: 50%; 
-  transform: translate(-50%, -50%); 
+.heatmap-day-column { 
   display: flex; 
   flex-direction: column; 
-  align-items: center; 
-  z-index: 10;
-}
-.score { font-size: 2.8rem; font-weight: 900; color: #fff; line-height: 1; }
-
-.gauge-footer { 
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-top: auto; /* Push to bottom of card */
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-glass);
+  gap: 6px; 
+  flex: 1; 
+  min-width: 0;
 }
 
-.vs-period { 
-  display: flex; 
-  align-items: center; 
-  gap: 0.5rem; 
-  color: var(--status-good); 
-  font-weight: 700; 
-  font-size: 0.85rem; 
+.heatmap-day-header { font-size: 0.75rem; font-weight: 800; color: var(--text-dim); }
+.heatmap-cell-v4 {
+  width: 100%; height: 12px; border-radius: 2px;
+  background: var(--border); /* Better visibility in light mode */
 }
 
-/* Trends padding fix */
-.distraction-trend-card { 
-  padding: 2.5rem; 
-  padding-bottom: 3.5rem; 
-  margin-top: 1.5rem; 
+/* Charts Area visibility */
+.charts-grid-two { display: grid; grid-template-columns: 1.8fr 1.1fr; gap: 1.5rem; }
+.chart-large, .chart-small { 
+  padding: 2rem; 
+  background: var(--bg-card); 
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  border-radius: 20px;
 }
-.trend-chart-wrap { margin-top: 3.5rem; }
+
+.chart-header h3 { color: var(--text-primary); }
+
+/* Productivity Score Gauge Fix */
+.score-gauge { 
+  background: var(--bg-card); 
+  border: 1px solid var(--border); 
+  box-shadow: var(--card-shadow);
+}
+
+.circular-progress .bg { stroke: var(--border); }
+.circular-progress .fg { stroke: var(--brand-primary); }
+.score { color: var(--text-primary); }
+
+/* Insights Card Restore */
+.sidebar-card { 
+  padding: 2rem; 
+  background: var(--bg-card); 
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+}
+
+.sidebar-card h3 { color: var(--text-primary); }
+.insight-p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+
+/* RECHARTS THEME OVERWRITES */
+.recharts-cartesian-axis-tick-value { fill: var(--text-muted) !important; font-size: 10px; font-weight: 600; }
+.recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line { stroke: var(--border) !important; }
+.recharts-tooltip-cursor { stroke: var(--border) !important; }

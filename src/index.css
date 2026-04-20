@@ -1,42 +1,56 @@
-:root {
-  /* Dynamic Brand Colors (handled by JS context) */
-  --brand-primary: #6366f1;
-  --brand-primary-glow: rgba(99, 102, 241, 0.3);
-  --text-on-brand: #ffffff;
+:root[data-theme="dark"] {
+  --bg-page: #0d0f1a;
+  --bg-card: #13151f;
+  --bg-glass: rgba(19, 21, 31, 0.7);
+  --text-primary: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --text-dim: rgba(255, 255, 255, 0.35);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.15);
+  --card-shadow: none;
+  --input-bg: rgba(255, 255, 255, 0.03);
   
-  --brand-secondary: #a855f7;
-  
-  /* Status Colors */
   --status-good: #10b981;
   --status-danger: #ef4444;
   --status-info: #3b82f6;
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+:root[data-theme="light"] {
+  --bg-page: #f4f5ff;
+  --bg-card: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --text-primary: #0d0f1a;
+  --text-muted: rgba(0, 0, 0, 0.5);
+  --text-dim: rgba(0, 0, 0, 0.35);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(0, 0, 0, 0.12);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --input-bg: #fff;
   
-  /* Backgrounds */
-  --bg-dark: #09090b;
-  --bg-card: #121214;
-  --bg-glass: rgba(18, 18, 20, 0.7);
-  
-  /* Text */
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  
-  /* Borders */
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.15);
-  
-  /* Spacing */
+  --status-good: #059669;
+  --status-danger: #dc2626;
+  --status-info: #2563eb;
+  --shadow-glow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+:root {
+  /* Common UI Constants */
   --space-xs: 0.5rem;
   --space-sm: 1rem;
   --space-md: 1.5rem;
   --space-lg: 2rem;
   --space-xl: 3rem;
   
-  /* Shadows */
-  --shadow-glow: 0 0 20px var(--brand-primary-glow);
-  
-  /* Transitions */
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-radius-lg: 20px;
+  --border-radius-md: 12px;
+
+  /* Dynamic Brand Colors */
+  --brand-primary: #6366f1;
+  --brand-primary-glow: rgba(99, 102, 241, 0.3);
+  --brand-secondary: #a855f7;
+  --text-on-brand: #ffffff;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -49,35 +63,24 @@
 
 body {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-dark);
-  color: var(--text-main);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden; /* App handle its own scroll */
+  transition: background-color 0.4s ease, color 0.4s ease;
+  overflow: hidden;
 }
 
-h1, h2, h3, h4 {
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* Glassmorphism Global Utilities */
+/* Unified Component Utilities */
 .glass-effect {
   background: var(--bg-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-glass);
-  border-radius: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--card-shadow);
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Common UI Elements */
 .badge {
   padding: 0.25rem 0.75rem;
   border-radius: 99px;
@@ -90,48 +93,26 @@ h1, h2, h3, h4 {
   gap: 0.4rem;
 }
 
-.badge-primary { background: var(--brand-primary-glow); color: var(--brand-primary); border: 1px solid rgba(99, 102, 241, 0.2); }
-.badge-success { background: rgba(16, 185, 129, 0.1); color: var(--status-good); border: 1px solid rgba(16, 185, 129, 0.2); }
-.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--status-danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+.badge-primary { background: var(--brand-primary-glow); color: var(--brand-primary); border: 1px solid var(--border); }
+.badge-success { background: rgba(16, 185, 129, 0.1); color: var(--status-good); border: 1px solid var(--border); }
+.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--status-danger); border: 1px solid var(--border); }
 
-@keyframes pulse-soft {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-/* Transitions */
-.fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-
+.fade-in { animation: fadeIn 0.5s ease-out; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+.text-good { color: var(--status-good) !important; }
+.text-danger { color: var(--status-danger) !important; }
+.text-primary { color: var(--text-primary) !important; }
+.text-muted { color: var(--text-muted) !important; }
+.text-dim { color: var(--text-dim) !important; }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-glass);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--border-light);
-}
-
-.text-good { color: var(--status-good); }
-.text-danger { color: var(--status-danger); }
-.text-xs { font-size: 0.75rem; color: var(--text-dim); }
-
-/* Utility Classes for Cards */
 .card-top-label {
   display: flex;
   align-items: center;
@@ -142,7 +123,5 @@ h1, h2, h3, h4 {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 1rem;
-  opacity: 0.8;
 }
-
 .card-top-label svg { color: var(--brand-primary); }

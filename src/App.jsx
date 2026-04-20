@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -44,7 +44,23 @@ const NotificationDropdown = () => {
 };
 
 const AppContent = () => {
-  const { toggleNotifications, showNotifications, notifications } = useSettings();
+  const { toggleNotifications, showNotifications, notifications, theme } = useSettings();
+  const [systemTheme, setSystemTheme] = useState(
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Dark' : 'Light'
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e) => setSystemTheme(e.matches ? 'Dark' : 'Light');
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Set the data-theme attribute on the root element
+  useEffect(() => {
+    const activeTheme = theme === 'System' ? systemTheme : theme;
+    document.documentElement.setAttribute('data-theme', activeTheme.toLowerCase());
+  }, [theme, systemTheme]);
 
   return (
     <BrowserRouter>
@@ -54,7 +70,7 @@ const AppContent = () => {
           <div className="sidebar-top">
             <div className="logo-section">
               <div className="logo-icon"><ShieldCheck size={24} strokeWidth={2.5} /></div>
-              <h2>DeepWork</h2>
+              <h2>DeepWorkGuard</h2>
             </div>
             
             <nav className="nav-menu">

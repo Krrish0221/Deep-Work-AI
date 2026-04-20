@@ -11,12 +11,16 @@ A high-performance, real-time AI vision application designed to eliminate worksp
 
 - **🎯 AI surveillance**: Real-time monitoring of your workspace via webcam.
 - **📱 Distraction Detection**: Automatically detects phones or specific "distracted" poses using a custom AI model.
-- **📊 Interactive Dashboard**: A glassmorphic, dark-themed UI featuring:
+- **📊 Interactive Dashboard**: A glassmorphic, theme-aware UI featuring:
   - **Focus Timer**: Tracks your deep work duration.
   - **Distraction Counter**: Tallies every time focus is broken.
   - **Real-time Chart**: Live AI confidence timeline using Recharts.
+- **🌓 Unified Theme Engine**: Seamlessly switch between **Dark Mode**, **Light Mode (Frosted Ice)**, or **System Sync** using a root-level token system.
+- **🔐 Identity & Security**: 
+  - **Avatar Management**: Dual-mode identity system (Initials vs. Custom Uploads) with premium presets.
+  - **Email Verification**: Secure 4-digit OTP verification system with success animations.
 - **🕒 Session History**: Persistent logging of your focus sessions for long-term productivity analysis.
-- **🎨 Premium Aesthetics**: Modern design system with smooth animations and HSL-based color palettes.
+- **🎨 Premium Aesthetics**: Modern design system with glassmorphism, smooth micro-interactions, and transition-aware UI.
 
 ---
 
@@ -54,16 +58,17 @@ npm run dev
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Vite, React, Lucide, Recharts
+- **Frontend**: Vite, React, Lucide, Recharts, Framer Motion
 - **AI Engine**: TensorFlow.js, @teachablemachine/image
 - **Backend**: Node.js, Express, Cors, Morgan
-- **Styling**: Vanilla CSS (Custom Glassmorphism Design)
+- **Styling**: Vanilla CSS (Unified Theme Variable Engine)
 
 ---
 
 ## 📝 Usage Tips
 - Click **"Initialize Guard"** to start the webcam and surveillance.
-- Ensure your workspace is well-lit for optimal AI detection accuracy.
+- Go to **Settings > Appearance** to switch between Frosted Ice (Light) and Midnight (Dark) themes.
+- Use the **Identity** section to set your avatar and verify your email via the OTP system.
 - Your session history is automatically saved to `./data/sessions.json` when you stop a session.
 
 ---
