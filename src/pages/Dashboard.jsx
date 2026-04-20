@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { TrendingUp, Clock, Inbox, ChevronRight } from 'lucide-react';
 import WebcamDetector from '../components/WebcamDetector';
-import StatsDashboard from '../components/StatsDashboard';
+import { FocusTimerHero, CompactStatsRow, RecentSessions } from '../components/StatsDashboard';
+import './Dashboard.css';
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -10,10 +10,16 @@ const Dashboard = () => {
   const [sessionActive, setSessionActive] = useState(false);
   const [focusTime, setFocusTime] = useState(0);
   const [distractionCount, setDistractionCount] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [currentProb, setCurrentProb] = useState(0);
   const [sessionData, setSessionData] = useState([]);
   const [history, setHistory] = useState([]);
   const [status, setStatus] = useState("Idle");
+  const [distractionEvents, setDistractionEvents] = useState([]);
+  const [startTime, setStartTime] = useState(null);
+  const [active, setActive] = useState(false);
+  
+  const lastDistractionRef = useRef(0);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -25,13 +31,45 @@ const Dashboard = () => {
     fetchHistory();
   }, []);
 
-  // Professional HH:MM:SS timer logic
+  const getProductivityText = () => {
+    if (history.length === 0) return "Welcome to your first focus session! Start guarding to see insights.";
+    
+    const today = new Date().toDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+
+    const todayFocus = history
+      .filter(s => new Date(s.timestamp).toDateString() === today)
+      .reduce((acc, s) => acc + s.duration, 0);
+    
+    const yesterdayFocus = history
+      .filter(s => new Date(s.timestamp).toDateString() === yesterdayStr)
+      .reduce((acc, s) => acc + s.duration, 0);
+
+    if (yesterdayFocus === 0) return "Day 1 of your journey! Focus now to build your baseline.";
+    
+    const diff = yesterdayFocus > 0 ? ((todayFocus - yesterdayFocus) / yesterdayFocus) * 100 : 0;
+    const isHigher = diff >= 0;
+    
+    return (
+      <>
+        Your focus is <span style={{color: isHigher ? 'var(--status-good)' : 'var(--status-danger)', fontWeight: '700'}}>
+          {Math.abs(Math.round(diff))}% {isHigher ? 'stronger' : 'lower'}
+        </span> than yesterday's average.
+      </>
+    );
+  };
+
   useEffect(() => {
     let interval;
-    if (sessionActive && (status === "Normal" || status === "Smartwatch" || status === "Smartwatch/Wrist")) {
+    if (sessionActive && (status === "Normal" || status === "Smartwatch")) {
       interval = setInterval(() => {
         setFocusTime(prev => prev + 1);
+        setCurrentStreak(prev => prev + 1);
       }, 1000);
+    } else if (sessionActive && status !== "Idle" && status !== "Normal") {
+      setCurrentStreak(0);
     }
     return () => clearInterval(interval);
   }, [sessionActive, status]);
@@ -49,9 +87,26 @@ const Dashboard = () => {
 
   const handleDistractionDetected = useCallback(() => {
     if (sessionActive) {
-      setDistractionCount(prev => prev + 1);
+      const now = Date.now();
+      // EMERGENCY FIX: 3-second cooldown logic as requested
+      if (now - lastDistractionRef.current > 3000) {
+        setDistractionCount(prev => prev + 1);
+        setDistractionEvents(prev => [...prev, focusTime]);
+        lastDistractionRef.current = now;
+      }
     }
-  }, [sessionActive]);
+  }, [sessionActive, focusTime]);
+
+  const toggleSession = () => {
+    if (!active) {
+      setActive(true);
+      setSessionActive(true);
+      setStartTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    } else {
+      handleSessionToggle(false);
+      setActive(false);
+    }
+  };
 
   const handleSessionToggle = (isActive) => {
     setSessionActive(isActive);
@@ -59,7 +114,8 @@ const Dashboard = () => {
       const sessionInfo = {
         duration: focusTime,
         distractions: distractionCount,
-        averageConfidence: sessionData.length > 0 ? (sessionData.reduce((acc, curr) => acc + curr.prob, 0) / sessionData.length) : 0
+        averageConfidence: sessionData.length > 0 ? (sessionData.reduce((acc, curr) => acc + curr.prob, 0) / sessionData.length) : 0,
+        distractionLog: distractionEvents
       };
       
       axios.post(`${API_BASE_URL}/sessions`, sessionInfo)
@@ -68,68 +124,56 @@ const Dashboard = () => {
         
       setFocusTime(0);
       setDistractionCount(0);
+      setCurrentStreak(0);
       setSessionData([]);
+      setDistractionEvents([]);
+      setStartTime(null);
       setStatus("Idle");
     }
   };
 
   return (
-    <div className="dashboard-content">
-      <div className="welcome-header">
-        <h3>Overview</h3>
-        <h1>Welcome back, <span className="gradient-text">Krish</span></h1>
-        <p className="welcome-subtitle">Your productivity is <span style={{color: 'var(--status-good)', fontWeight: '600'}}><TrendingUp size={14} style={{display: 'inline', verticalAlign: 'middle'}} /> 12% higher</span> than yesterday's average.</p>
-      </div>
+    <div className="dashboard-v2-container fade-in">
+      <header className="dashboard-header-v2">
+        <div className="header-slug">REAL-TIME MONITOR / DEEP FOCUS GUARD</div>
+        <h1>DeepWork <span className="gradient-text">Guard</span></h1>
+        <p className="productivity-summary-v2">{getProductivityText()}</p>
+      </header>
 
-      <div className="dashboard-grid">
-        <div className="grid-left">
+      <div className="hero-row-v2">
+        <div className="camera-col-v2">
           <WebcamDetector 
             onStatusChange={handleStatusChange}
             onDistractionDetected={handleDistractionDetected}
             onSessionToggle={handleSessionToggle}
             sessionActive={sessionActive}
+            active={active}
+            setActive={setActive}
           />
         </div>
-
-        <div className="grid-right">
-          <StatsDashboard 
-            sessionData={sessionData}
-            distractionCount={distractionCount}
+        <div className="timer-col-v2">
+          <FocusTimerHero 
             focusTime={focusTime}
-            currentProb={currentProb}
             sessionActive={sessionActive}
-            history={history}
+            status={status}
+            onToggle={toggleSession}
+            startTime={startTime}
           />
-          
-          <div className="recent-history glass-effect">
-            <div className="section-header">
-              <h3>Recent Sessions</h3>
-              <button className="text-btn">View Full Report <ChevronRight size={14} /></button>
-            </div>
-            
-            <div className="history-list">
-              {history.slice(0, 3).map(session => (
-                <div key={session.id} className="history-item">
-                  <div className="history-icon focus-icon"><Clock size={16} /></div>
-                  <div className="history-details">
-                    <span className="h-date">{new Date(session.timestamp).toLocaleDateString(undefined, {month: 'long', day: 'numeric'})}</span>
-                    <span className="h-duration">{Math.floor(session.duration / 60)}h {session.duration % 60}m</span>
-                  </div>
-                  <div className="history-stats">
-                    <span className="badge badge-danger">-{session.distractions}</span>
-                  </div>
-                </div>
-              ))}
-              {history.length === 0 && (
-                <div className="empty-state">
-                  <Inbox size={40} strokeWidth={1} />
-                  <p>No session history found.</p>
-                  <span className="text-xs">Start your first focus session to see data.</span>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
+      </div>
+
+      <div className="stats-row-v3-container">
+        <CompactStatsRow 
+          distractionCount={distractionCount}
+          currentProb={currentProb}
+          currentStreak={currentStreak}
+          sessionActive={sessionActive}
+          sessionCount={history.length}
+        />
+      </div>
+
+      <div className="history-row-standalone">
+        <RecentSessions history={history} />
       </div>
     </div>
   );

@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as tmImage from '@teachablemachine/image';
-import { Camera, Zap, Shield, Info, Loader2, VideoOff } from 'lucide-react';
+import { Shield, Loader2, Camera, VideoOff } from 'lucide-react';
 import './WebcamDetector.css';
 
 const MODEL_URL = "https://teachablemachine.withgoogle.com/models/-YCasu5Jm/";
 
-const WebcamDetector = ({ onStatusChange, onDistractionDetected, onSessionToggle, sessionActive }) => {
+const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, active, setActive }) => {
   const videoRef = useRef(null);
   const [model, setModel] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [active, setActive] = useState(false);
   const [predictions, setPredictions] = useState([]);
   const [currentStatus, setCurrentStatus] = useState("Idle");
   
@@ -37,7 +36,7 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, onSessionToggle
       setCurrentStatus(top.className);
       onStatusChange(top.className, top.probability);
       
-      // Semantic alerting logic
+      // Detection alerting logic
       if (top.className.toLowerCase().match(/phone|mobile|distracted/) && top.probability > 0.85) {
         onDistractionDetected();
       }
@@ -51,58 +50,47 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, onSessionToggle
     return () => cancelAnimationFrame(requestRef.current);
   }, [active, predict]);
 
-  const toggleCamera = async () => {
-    if (!active) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoRef.current.srcObject = stream;
-        setActive(true);
-        onSessionToggle(true); // Signal session start
-      } catch (err) { alert("Camera access denied"); }
-    } else {
-      if (videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-      }
-      setActive(false);
-      setCurrentStatus("Idle");
-      setPredictions([]);
-      onSessionToggle(false); // Signal session stop
+  useEffect(() => {
+    if (active && videoRef.current && !videoRef.current.srcObject) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          if (videoRef.current) videoRef.current.srcObject = stream;
+        })
+        .catch(err => {
+          console.error("Camera error", err);
+          setActive(false);
+        });
+    } else if (!active && videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+      videoRef.current.srcObject = null;
     }
-  };
+  }, [active, setActive]);
 
-  const getBarColor = (className, prob) => {
-    if (prob < 0.2) return 'rgba(255, 255, 255, 0.1)';
+  const getStatusColor = (className, prob) => {
+    if (!active) return 'var(--text-dim)';
     const name = className.toLowerCase();
     if (name.includes('phone') || name.includes('distracted')) return 'var(--status-danger)';
     if (name.includes('normal') || name.includes('focus')) return 'var(--status-good)';
     return 'var(--status-info)';
   };
 
+  const statusColor = useMemo(() => {
+    const topProb = predictions.find(p => p.className === currentStatus)?.probability || 0;
+    return getStatusColor(currentStatus, topProb);
+  }, [currentStatus, predictions, active]);
+
   return (
-    <div className={`detector-card glass-effect ${active ? 'active-guard' : ''}`}>
-      <div className="detector-header">
-        <div className="header-info">
-          <span className="text-xs">Focus Guard v1.0</span>
-          <h3>Live AI Monitor</h3>
-        </div>
-        <div className="status-badge-container">
-          {active ? (
-            <div className="badge badge-success pulse-animation">
-              <Zap size={14} fill="currentColor" /> MONITORING
-            </div>
-          ) : (
-            <div className="badge badge-primary">
-              <VideoOff size={14} /> SYSTEM STANDBY
-            </div>
-          )}
-        </div>
+    <div className={`detector-card-v3 ${active ? 'active-guard' : ''}`} style={{ borderColor: active ? statusColor : 'var(--border-glass)' }}>
+      <div className="card-top-label">
+        <Shield size={14} />
+        <span>VISION GUARD</span>
       </div>
 
-      <div className={`video-container ${!active ? 'inactive' : ''}`}>
+      <div className="video-viewport-v3">
         {loading && (
           <div className="loader-overlay">
             <Loader2 className="spin" size={32} />
-            <p>Neural Engine Loading...</p>
+            <p>AI Core Initializing...</p>
           </div>
         )}
         
@@ -115,72 +103,56 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, onSessionToggle
         />
 
         {!active && !loading && (
-          <div className="camera-placeholder" onClick={toggleCamera}>
-            <div className="placeholder-icon-bg">
-              <Camera size={48} strokeWidth={1} />
-            </div>
-            <div className="placeholder-content">
-              <h4>Vision Guard Offline</h4>
-              <p>Initialize the AI engine to start your secure focus session.</p>
-            </div>
+          <div className="camera-placeholder-v3">
+            <VideoOff size={44} strokeWidth={1.5} />
+            <p className="placeholder-text">Vision Guard Standby</p>
           </div>
         )}
 
+        {/* OVERLAYS */}
         {active && (
-          <div className="detection-overlay">
-            <div className="corner-brackets">
+          <div className="cam-overlays">
+            <div className="overlay-badge top-right scale-down">
+              <div className="dot pulse-success"></div>
+              <span>READY</span>
+            </div>
+            
+            <div className="overlay-badge bottom-left status-pill-v3" style={{ background: statusColor }}>
+              {currentStatus.includes('Phone') ? '📱' : '✅'} {currentStatus}
+            </div>
+
+            <div className="corner-brackets-v3">
               <div className="bracket tl"></div>
               <div className="bracket tr"></div>
               <div className="bracket bl"></div>
               <div className="bracket br"></div>
             </div>
-            
-            <div className="current-status-overlay">
-              <Shield size={16} color={getBarColor(currentStatus, predictions.find(p => p.className === currentStatus)?.probability)} />
-              <span className="status-text">{currentStatus}</span>
-            </div>
           </div>
         )}
       </div>
 
-      <div className="detector-controls">
-        <button 
-          className={`btn-session ${active ? 'btn-stop' : 'btn-start'}`} 
-          onClick={toggleCamera}
-          disabled={loading}
-        >
-          {active ? 'Terminate Guard' : 'Initialize Focus Guard'}
-        </button>
-        
-        <div className="detection-bars">
-          <div className="bars-header">
-            <h4>Live Feed Analysis</h4>
-            <div className="info-tooltip">
-              <Info size={14} />
-              <span className="tooltip-text">Inference confidence for detected object classes</span>
-            </div>
-          </div>
-          <div className="bars-list">
-            {predictions.length > 0 ? predictions.map(p => (
-              <div key={p.className} className="bar-item">
-                <div className="bar-labels">
-                  <span className="bar-name">{p.className}</span>
-                  <span className="bar-percent">{(p.probability * 100).toFixed(1)}%</span>
-                </div>
-                <div className="bar-track">
-                  <div 
-                    className="bar-fill" 
-                    style={{ 
-                      width: `${p.probability * 100}%`, 
-                      background: getBarColor(p.className, p.probability) 
-                    }}
-                  ></div>
-                </div>
+      {/* ANALYSIS FOOTER */}
+      <div className="analysis-footer-v3">
+        <div className="footer-label">Live Inference Analysis</div>
+        <div className="docked-bars-row">
+          {predictions.map(p => (
+            <div key={p.className} className="docked-bar-item-v3">
+              <div className="bar-label-v3">
+                <span className="label-text">{p.className.replace('/', ' / ')}</span>
+                <span className="label-val">— {Math.round(p.probability * 100)}%</span>
               </div>
-            )) : (
-              <p className="bars-empty">Awaiting model inference...</p>
-            )}
-          </div>
+              <div className="bar-progress-v3">
+                <div 
+                  className={`bar-fill-v3 ${p.className.toLowerCase().match(/phone|distracted|earbuds/) && p.probability > 0.8 ? 'pulse-alert' : ''}`}
+                  style={{ 
+                    width: `${p.probability * 100}%`, 
+                    background: getStatusColor(p.className, p.probability) 
+                  }}
+                ></div>
+              </div>
+            </div>
+          ))}
+          {predictions.length === 0 && <div className="bars-waiting">Awaiting Inference Data...</div>}
         </div>
       </div>
     </div>

@@ -46,23 +46,30 @@
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 1rem 2rem;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: var(--transition-smooth);
-  border-left: 3px solid transparent;
+  padding: 1.25rem 1.5rem;
+  color: rgba(255, 255, 255, 0.6); /* Increased from 0.4 */
+  text-decoration: none;
   font-weight: 500;
+  transition: var(--transition-smooth);
+  position: relative;
+  border-radius: 12px;
+  margin: 0.25rem 0;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.03);
   color: #fff;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .nav-item.active {
-  background: linear-gradient(90deg, var(--brand-primary-glow) 0%, rgba(99, 102, 241, 0) 100%);
-  border-left: 3px solid var(--brand-primary);
   color: #fff;
+  background: rgba(99, 102, 241, 0.15); /* Glassy purple background */
+  border-left: 3px solid var(--brand-primary);
+}
+
+.nav-item svg {
+  color: inherit;
+  opacity: 0.9; /* Increased opacity */
 }
 
 .user-profile {
