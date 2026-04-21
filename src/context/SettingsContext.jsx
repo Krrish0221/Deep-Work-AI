@@ -10,6 +10,16 @@ export const SettingsProvider = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     localStorage.getItem('sidebar_collapsed') === 'true'
   );
+  
+  // Notification State
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true);
+  const [notifications, setNotifications] = useState([
+    { id: 1, type: 'danger', title: 'Critical Distraction', text: 'Phone detected for 5+ minutes in Session #42.', time: '2m ago', unread: true },
+    { id: 2, type: 'warning', title: 'Focus Dropping', text: 'Your focus score dipped below 60% in the last 15 mins.', time: '15m ago', unread: true },
+    { id: 3, type: 'success', title: 'Goal Achieved!', text: 'You completed your 2h daily focus goal. Keep it up!', time: '1h ago', unread: false },
+    { id: 4, type: 'info', title: 'Weekly Summary', text: 'Your average focus time is up by 12% this week.', time: '5h ago', unread: false },
+  ]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(prev => {
@@ -38,7 +48,6 @@ export const SettingsProvider = ({ children }) => {
 
   const toggleNotifications = () => {
     setShowNotifications(prev => !prev);
-    // Note: We don't clear hasUnread until they click mark all as read
   };
 
   const markAllAsRead = () => {
@@ -59,5 +68,4 @@ export const SettingsProvider = ({ children }) => {
       {children}
     </SettingsContext.Provider>
   );
-};  );
 };

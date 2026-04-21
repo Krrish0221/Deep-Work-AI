@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 :root[data-theme="dark"] {
   --bg-page: #0d0f1a;
   --bg-card: #13151f;
@@ -52,8 +54,6 @@
   --brand-secondary: #a855f7;
   --text-on-brand: #ffffff;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 * {
   margin: 0;

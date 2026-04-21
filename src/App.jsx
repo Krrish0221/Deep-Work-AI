@@ -163,9 +163,9 @@ const AppContent = () => {
 
   return (
     <BrowserRouter>
-      <div className="app-layout">
+      <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Sidebar */}
-        <aside className={`sidebar glass-effect ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+        <aside className="sidebar glass-effect">
           <button className="sidebar-toggle-v3" onClick={toggleSidebar} title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}>
             {isSidebarCollapsed ? '›' : '‹'}
           </button>
