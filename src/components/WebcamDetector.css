@@ -85,6 +85,7 @@ video {
   color: var(--text-muted);
   margin-bottom: 1.25rem;
   font-weight: 800;
+  opacity: 0.4; /* Increased from default */
 }
 
 .docked-bars-row {
@@ -117,7 +118,7 @@ video {
   50% { opacity: 0.6; filter: brightness(1.5); }
 }
 
-.bars-waiting { font-size: 0.6rem; color: var(--text-dim); text-align: center; opacity: 0.5; }
+.bars-waiting { font-size: 0.6rem; color: var(--text-dim); text-align: center; opacity: 0.4; }
 
 /* Active State */
 .active-guard {

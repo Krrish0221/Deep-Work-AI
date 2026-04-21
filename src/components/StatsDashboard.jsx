@@ -57,11 +57,18 @@ export const FocusTimerHero = ({ focusTime, sessionActive, status, onToggle, loa
 
       <div className="timer-footer-v3">
         <button 
-          className={`btn-hero-v3 ${sessionActive ? 'btn-stop-v3' : 'btn-start-v3'}`}
+          className={`btn-primary-v3 ${sessionActive ? 'btn-stop-v3' : 'btn-start-v3'}`}
           onClick={onToggle}
           disabled={loading}
         >
-          {sessionActive ? 'TERMINATE GUARD' : 'INITIALIZE FOCUS GUARD'}
+          {loading ? (
+            <>
+              <Clock className="spin" size={18} />
+              <span>INITIALIZING...</span>
+            </>
+          ) : (
+            sessionActive ? 'TERMINATE GUARD' : 'INITIALIZE FOCUS GUARD'
+          )}
         </button>
       </div>
     </div>
@@ -162,7 +169,7 @@ export const RecentSessions = ({ history }) => {
           <h3>Recent Sessions</h3>
           <span className="subtitle-v3">Last 3 focus cycles</span>
         </div>
-        <button className="text-link-v3 header-btn-right">
+        <button className="btn-secondary-v3 header-btn-right">
           View All History <ChevronRight size={14} />
         </button>
       </div>

@@ -7,12 +7,17 @@ export const useSettings = () => useContext(SettingsContext);
 export const SettingsProvider = ({ children }) => {
   const [accentColor, setAccentColor] = useState('#6366f1');
   const [theme, setTheme] = useState('Dark');
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'success', text: "Your focus streak is up 15% today!", time: "2m ago" },
-    { id: 2, type: 'info', text: "Peak productivity window detected: 9am-11am", time: "1h ago" },
-    { id: 3, type: 'warning', text: "High phone distraction level in last session", time: "3h ago" }
-  ]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    localStorage.getItem('sidebar_collapsed') === 'true'
+  );
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const newState = !prev;
+      localStorage.setItem('sidebar_collapsed', newState);
+      return newState;
+    });
+  };
 
   // Sync accent color to CSS variables
   useEffect(() => {
@@ -31,7 +36,16 @@ export const SettingsProvider = ({ children }) => {
     document.documentElement.style.setProperty('--brand-primary-glow', `${accentColor}4D`); // 30% opacity
   }, [accentColor]);
 
-  const toggleNotifications = () => setShowNotifications(prev => !prev);
+  const toggleNotifications = () => {
+    setShowNotifications(prev => !prev);
+    // Note: We don't clear hasUnread until they click mark all as read
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    setHasUnread(false);
+  };
+
   const clearNotification = (id) => setNotifications(prev => prev.filter(n => n.id !== id));
 
   return (
@@ -39,9 +53,11 @@ export const SettingsProvider = ({ children }) => {
       accentColor, setAccentColor,
       theme, setTheme,
       showNotifications, setShowNotifications, toggleNotifications,
-      notifications, clearNotification
+      notifications, clearNotification, hasUnread, markAllAsRead,
+      isSidebarCollapsed, toggleSidebar
     }}>
       {children}
     </SettingsContext.Provider>
   );
+};  );
 };

@@ -47,7 +47,8 @@ const Dashboard = () => {
       .filter(s => new Date(s.timestamp).toDateString() === yesterdayStr)
       .reduce((acc, s) => acc + s.duration, 0);
 
-    if (yesterdayFocus === 0) return "Day 1 of your journey! Focus now to build your baseline.";
+    if (yesterdayFocus === 0 && todayFocus === 0) return "Day 1 of your journey! Focus now to build your baseline.";
+    if (todayFocus === 0 && yesterdayFocus > 0) return "No focus sessions today yet — start guarding to beat yesterday's mark!";
     
     const diff = yesterdayFocus > 0 ? ((todayFocus - yesterdayFocus) / yesterdayFocus) * 100 : 0;
     const isHigher = diff >= 0;

@@ -62,7 +62,7 @@ const getSummary = (range) => {
         { label: "Total Focus Time", value: "6h 15m", trend: "+24%", color: "var(--brand-primary)" },
         { label: "Avg Session Length", value: "48m", trend: "-2%", color: "var(--brand-secondary)" },
         { label: "Best Focus Streak", value: "1h 45m", color: "var(--status-info)" },
-        { label: "Distraction-Free Sessions", value: "4 of 6", ratio: 0.66, color: "#f59e0b" }
+        { label: "Distraction-Free Sessions", value: "4 of 6", ratio: 0.66, color: "var(--status-good)" }
       ];
     case 'Month':
       return [
@@ -76,7 +76,7 @@ const getSummary = (range) => {
         { label: "Total Focus Time", value: "14h 32m", trend: "+12%", color: "var(--brand-primary)" },
         { label: "Avg Session Length", value: "1h 12m", trend: "+5%", color: "var(--brand-secondary)" },
         { label: "Best Focus Streak", value: "2h 45m", color: "var(--status-info)" },
-        { label: "Distraction-Free Sessions", value: "3 of 12", ratio: 0.25, color: "#f59e0b" }
+        { label: "Distraction-Free Sessions", value: "3 of 12", ratio: 0.25, color: "var(--status-good)" }
       ];
   }
 };
@@ -201,7 +201,12 @@ const Analytics = () => {
                   <span className="stat-label">{stat.label}</span>
                   <div className="stat-value-row">
                     <h2 style={{ color: stat.color }}>{stat.value}</h2>
-                    {stat.trend && <span className="trend-up"><ArrowUpRight size={14} /> {stat.trend}</span>}
+                    {stat.trend && (
+                      <span className={stat.trend.startsWith('-') ? 'trend-down' : 'trend-up'}>
+                        {stat.trend.startsWith('-') ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />} 
+                        {stat.trend}
+                      </span>
+                    )}
                   </div>
                   {stat.ratio !== undefined && (
                     <div className="stat-progress-bg">
@@ -212,13 +217,13 @@ const Analytics = () => {
               ))}
             </div>
 
-            <div className="charts-grid-two">
-              <div className="chart-large glass-effect">
-                <div className="chart-header">
-                  <h3>Focus Over Time</h3>
-                  <span className="view-details-btn">VIEW FULL LOG</span>
-                </div>
-                <div className="chart-wrap">
+            <div className="chart-large glass-effect">
+              <div className="chart-header">
+                <h3>Focus Over Time</h3>
+                <span className="view-details-btn purple-link">VIEW FULL LOG</span>
+              </div>
+              <div className="chart-wrap">
+                {focusData && focusData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={260}>
                     <AreaChart data={focusData}>
                       <defs>
@@ -238,22 +243,29 @@ const Analytics = () => {
                         width={30}
                       />
                       <Tooltip content={<CustomTooltip />} />
-                      <ReferenceLine y={2} stroke="var(--status-danger)" strokeDasharray="5 5" label={{ value: 'Daily Goal', position: 'right', fill: 'var(--status-danger)', fontSize: 10 }} />
+                      <ReferenceLine y={2} stroke="#ef4444" strokeDasharray="5 5" label={{ value: 'GOAL', position: 'right', fill: '#ef4444', fontSize: 10, fontWeight: 800 }} />
                       <Area type="monotone" dataKey="hours" name="Focused Time" stroke="var(--brand-primary)" strokeWidth={3} fillOpacity={1} fill="url(#focusGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
+                ) : (
+                  <div className="empty-chart-msg">
+                    <Clock size={32} />
+                    <p>Not enough data yet — keep focusing!</p>
+                  </div>
+                )}
               </div>
+            </div>
 
-              <div className="chart-small glass-effect">
-                <h3>Distraction Frequency</h3>
-                <div className="donut-wrap">
-                  <ResponsiveContainer width="100%" height={200}>
+            <div className="chart-small glass-effect distro-card">
+              <h3>Distraction Frequency</h3>
+              <div className="donut-hero-stack">
+                <div className="donut-main-visual">
+                  <ResponsiveContainer width="100%" height={220}>
                     <PieChart>
                       <Pie 
                         data={DISTRACTION_BREAKDOWN} 
-                        innerRadius={60} 
-                        outerRadius={80} 
+                        innerRadius={65} 
+                        outerRadius={85} 
                         paddingAngle={5} 
                         dataKey="value"
                         stroke="none"
@@ -263,15 +275,16 @@ const Analytics = () => {
                       <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="donut-center">
+                  <div className="donut-center-label">
                     <span className="total-count">248</span>
-                    <span className="text-xs">Total Alerts</span>
+                    <span className="text-xs">Alerts</span>
                   </div>
                 </div>
-                <div className="donut-legend">
+                
+                <div className="donut-legend-grid">
                   {DISTRACTION_BREAKDOWN.map(item => (
-                    <div key={item.name} className="legend-item">
-                      <div className="legend-dot" style={{ background: item.color }}></div>
+                    <div key={item.name} className="legend-row-v2">
+                      <div className="legend-circle-12" style={{ background: item.color }}></div>
                       <span className="legend-name">{item.name}</span>
                       <span className="legend-val">{item.value}%</span>
                     </div>
