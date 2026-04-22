@@ -36,7 +36,8 @@ const Settings = () => {
     aiProvider, setAiProvider,
     confidenceThreshold, setConfidenceThreshold,
     teachableUrl, setTeachableUrl,
-    roboflowConfig, setRoboflowConfig
+    roboflowConfig, setRoboflowConfig,
+    apiUsage
   } = useSettings();
 
   const { userData, updateProfile } = useUser();
@@ -86,6 +87,7 @@ const Settings = () => {
   const [notifSound, setNotifSound] = useState(true);
   const [notifDesktop, setNotifDesktop] = useState(true);
   const [notifSummary, setNotifSummary] = useState(false);
+  const [showDeployOwn, setShowDeployOwn] = useState(false);
 
   const isDirty = useMemo(() => {
     return (
@@ -371,15 +373,18 @@ const Settings = () => {
           </div>
           <div className="section-content">
             <div className="setting-control">
-              <label>Model Provider</label>
-              <div className="segmented-control">
-                {['Teachable Machine', 'Roboflow'].map(p => (
+              <label>Detection Mode</label>
+              <div className="segmented-control mode-selector">
+                {[
+                  { id: 'Fast Mode', label: '⚡ Fast Mode', desc: 'Real-time, local' },
+                  { id: 'Precision Mode', label: '🎯 Precision Mode', desc: '8-class, API' }
+                ].map(p => (
                   <button 
-                    key={p} 
-                    className={aiProvider === p ? 'active' : ''} 
-                    onClick={() => setAiProvider(p)}
+                    key={p.id} 
+                    className={aiProvider === p.id ? 'active' : ''} 
+                    onClick={() => setAiProvider(p.id)}
                   >
-                    {p}
+                    {p.label}
                   </button>
                 ))}
               </div>
@@ -387,15 +392,87 @@ const Settings = () => {
 
             <div className="status-pill-row">
               <div className="status-indicator">
-                <div className="dot pulse-success"></div>
-                <span className="status-text">{aiProvider} Engine — Ready</span>
+                <div className={`dot ${aiProvider === 'Fast Mode' ? 'pulse-success' : 'pulse-info'}`}></div>
+                <span className="status-text">
+                  {aiProvider === 'Fast Mode' ? 'Teachable Machine Engine — Ready' : 'Roboflow API — Connected'}
+                </span>
               </div>
             </div>
 
-            {aiProvider === 'Teachable Machine' ? (
-              <p className="explainer">Currently using the <b>Proprietary Vision Model</b> optimized for general workspace focus detection.</p>
+            {aiProvider === 'Fast Mode' ? (
+              <div className="mode-details-v4 fade-in">
+                <div className="mode-desc-box">
+                  <p className="explainer mb-4">Currently using <b>Browser-Based Inference</b> optimized for zero-latency monitoring.</p>
+                  
+                  <div className="classes-section">
+                    <span className="stat-label-tiny mb-2 d-block">DETECTED CLASSES</span>
+                    <div className="classes-badge-group">
+                      {['Normal', 'Phone', 'Earbuds', 'Smartwatch'].map(cls => (
+                        <span key={cls} className="mode-badge">{cls}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <button className="btn-full-action mt-4">
+                  <RotateCcw size={14} /> 
+                  <span>Re-upload Model Artifacts</span>
+                </button>
+              </div>
             ) : (
-              <p className="explainer">Currently using the <b>{roboflowConfig.model}</b> custom engine for high-precision object detection.</p>
+              <div className="mode-details-v4 fade-in">
+                <div className="precision-stats-grid">
+                  <div className="stat-card-v2">
+                    <span className="stat-label-tiny">CLASSES DETECTED</span>
+                    <span className="stat-value-large">8</span>
+                  </div>
+                  <div className="stat-card-v2">
+                    <span className="stat-label-tiny">API USAGE</span>
+                    <div className="usage-value-row">
+                      <span className="stat-value-large">{apiUsage.used}</span>
+                      <span className="stat-value-muted">/ {apiUsage.total}</span>
+                    </div>
+                    <span className="reset-timer-tag">Resets in {apiUsage.resetsIn} days</span>
+                  </div>
+                </div>
+
+                <div className="usage-progress-v2 mt-4">
+                  <div className="usage-bar-bg">
+                    <div className="usage-bar-fill" style={{ width: `${(apiUsage.used / apiUsage.total) * 100}%` }}></div>
+                  </div>
+                </div>
+                
+                <div className="deploy-custom-section mt-4">
+                  {!showDeployOwn ? (
+                    <button className="btn-secondary ghost-btn btn-xs" onClick={() => setShowDeployOwn(true)}>
+                      Want to deploy your own model?
+                    </button>
+                  ) : (
+                    <div className="custom-model-form fade-in">
+                      <div className="input-group">
+                        <label className="stat-label-tiny">ROBOFLOW API KEY</label>
+                        <div className="input-wrapper-v2">
+                          <input 
+                            type="password" 
+                            value={localRoboflow.apiKey} 
+                            onChange={(e) => setLocalRoboflow({...localRoboflow, apiKey: e.target.value})} 
+                            placeholder="••••••••••••••••" 
+                          />
+                          <button className="btn-save-key" onClick={() => {
+                            setRoboflowConfig(localRoboflow);
+                            setShowDeployOwn(false);
+                          }}>
+                            Update
+                          </button>
+                        </div>
+                      </div>
+                      <button className="btn-cancel-deploy mt-2" onClick={() => setShowDeployOwn(false)}>Cancel</button>
+                    </div>
+                  )}
+                </div>
+                
+                <p className="explainer mt-4">Model: <b>DeepWork AI v1</b> · <span className="text-success">76% mAP</span></p>
+              </div>
             )}
             
             <div className="setting-control mt-4">

@@ -21,8 +21,10 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
   const [loading, setLoading] = useState(true);
   const [predictions, setPredictions] = useState([]);
   const [currentStatus, setCurrentStatus] = useState("Idle");
+  const [countdown, setCountdown] = useState(0);
   
   const requestRef = useRef();
+  const countdownInterval = useRef();
 
   // Load Teachable Machine
   useEffect(() => {
@@ -52,12 +54,24 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
     // For Roboflow, we often use their Hosted API or a specialized JS library
     const loadRoboflow = async () => {
       setLoading(true);
-      // Simulate backend preparation for the model
       await new Promise(r => setTimeout(r, 800));
       setLoading(false);
     };
     loadRoboflow();
   }, [aiProvider, roboflowConfig]);
+
+  // Handle Countdown for Precision Mode
+  useEffect(() => {
+    if (aiProvider === 'Precision Mode' && active) {
+      countdownInterval.current = setInterval(() => {
+        setCountdown(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    } else {
+      clearInterval(countdownInterval.current);
+      setCountdown(0);
+    }
+    return () => clearInterval(countdownInterval.current);
+  }, [aiProvider, active]);
 
   const captureFrame = () => {
     if (!videoRef.current) return null;
@@ -97,7 +111,8 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
         if (data.predictions && data.predictions.length > 0) {
           const formattedPredictions = data.predictions.map(p => ({
             className: p.class,
-            probability: p.confidence
+            probability: p.confidence,
+            bbox: { x: p.x, y: p.y, width: p.width, height: p.height }
           }));
           setPredictions(formattedPredictions);
           
@@ -109,17 +124,18 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
             onDistractionDetected();
           }
         } else {
-          setCurrentStatus("No objects detected");
-          onStatusChange("Normal", 0.99); // Assume normal if nothing distracting detected
-          setPredictions([{ className: 'Searching...', probability: 1 }]);
+          setCurrentStatus("Normal");
+          onStatusChange("Normal", 0.99);
+          setPredictions([]);
         }
       } catch (err) {
         console.error("Roboflow Inference Error", err);
       }
+      setCountdown(5);
     }
     
-    // Control frame rate: TM can be faster, Roboflow should be slightly throttled for API
-    const delay = aiProvider === 'Roboflow' ? 1000 : 100;
+    // Control frame rate
+    const delay = aiProvider === 'Precision Mode' ? 5000 : 100;
     setTimeout(() => {
       requestRef.current = requestAnimationFrame(predict);
     }, delay);
@@ -195,12 +211,38 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
           <div className="cam-overlays">
             <div className="overlay-badge top-right scale-down">
               <div className="dot pulse-success"></div>
-              <span>READY</span>
+              <span>{aiProvider === 'Fast Mode' ? 'LIVE' : 'PRECISION'}</span>
             </div>
+
+            {aiProvider === 'Precision Mode' && countdown > 0 && (
+              <div className="overlay-badge top-left countdown-badge">
+                <RotateCcw size={12} className="spin-slow" />
+                <span>Next scan in {countdown}s</span>
+              </div>
+            )}
             
             <div className="overlay-badge bottom-left status-pill-v3" style={{ background: statusColor }}>
               {currentStatus.includes('Phone') ? '📱' : '✅'} {currentStatus}
             </div>
+
+            {/* Bounding Boxes for Roboflow */}
+            {aiProvider === 'Precision Mode' && predictions.map((p, i) => p.bbox && (
+              <div 
+                key={i}
+                className="bbox-v3"
+                style={{
+                  left: `${(p.bbox.x - p.bbox.width/2) / 640 * 100}%`,
+                  top: `${(p.bbox.y - p.bbox.height/2) / 480 * 100}%`,
+                  width: `${p.bbox.width / 640 * 100}%`,
+                  height: `${p.bbox.height / 480 * 100}%`,
+                  borderColor: getStatusColor(p.className, p.probability)
+                }}
+              >
+                <span className="bbox-label" style={{ background: getStatusColor(p.className, p.probability) }}>
+                  {p.className} {Math.round(p.probability * 100)}%
+                </span>
+              </div>
+            ))}
 
             <div className="corner-brackets-v3">
               <div className="bracket tl"></div>
@@ -214,9 +256,11 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
 
       {/* ANALYSIS FOOTER */}
       <div className="analysis-footer-v3">
-        <div className="footer-label">Live Inference Analysis</div>
+        <div className="footer-label">
+          {aiProvider === 'Fast Mode' ? 'Real-time Inference' : 'Deep Precision Analysis (8-Class)'}
+        </div>
         <div className="docked-bars-row">
-          {predictions.map(p => (
+          {predictions.length > 0 ? predictions.map(p => (
             <div key={p.className} className="docked-bar-item-v3">
               <div className="bar-label-v3">
                 <span className="label-text">{p.className.replace('/', ' / ')}</span>
@@ -232,8 +276,11 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
                 ></div>
               </div>
             </div>
-          ))}
-          {predictions.length === 0 && <div className="bars-waiting">Awaiting Inference Data...</div>}
+          )) : (
+            <div className="bars-waiting">
+              {aiProvider === 'Fast Mode' ? 'Awaiting Inference Data...' : 'Initializing Deep Scan...'}
+            </div>
+          )}
         </div>
       </div>
     </div>

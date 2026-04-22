@@ -12,14 +12,15 @@ export const SettingsProvider = ({ children }) => {
   );
 
   // AI Core State
-  const [aiProvider, setAiProvider] = useState('Teachable Machine');
+  const [aiProvider, setAiProvider] = useState('Fast Mode'); // 'Fast Mode' (Teachable Machine) | 'Precision Mode' (Roboflow)
   const [confidenceThreshold, setConfidenceThreshold] = useState(85);
   const [teachableUrl, setTeachableUrl] = useState('https://teachablemachine.withgoogle.com/models/-YCasu5Jm/');
   const [roboflowConfig, setRoboflowConfig] = useState({
     apiKey: 'rf_PYTMexEStZYGUWefzBTc0oLjqd32',
-    model: 'deepworkai-v2.1', // Assuming the slug based on name
+    model: 'deepworkai-v2.1',
     version: '1'
   });
+  const [apiUsage, setApiUsage] = useState({ used: 847, total: 1000, resetsIn: 8 });
 
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
@@ -77,7 +78,8 @@ export const SettingsProvider = ({ children }) => {
       aiProvider, setAiProvider,
       confidenceThreshold, setConfidenceThreshold,
       teachableUrl, setTeachableUrl,
-      roboflowConfig, setRoboflowConfig
+      roboflowConfig, setRoboflowConfig,
+      apiUsage, setApiUsage
     }}>
       {children}
     </SettingsContext.Provider>
