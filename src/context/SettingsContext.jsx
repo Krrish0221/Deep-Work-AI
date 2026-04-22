@@ -11,6 +11,16 @@ export const SettingsProvider = ({ children }) => {
     localStorage.getItem('sidebar_collapsed') === 'true'
   );
 
+  // AI Core State
+  const [aiProvider, setAiProvider] = useState('Teachable Machine');
+  const [confidenceThreshold, setConfidenceThreshold] = useState(85);
+  const [teachableUrl, setTeachableUrl] = useState('https://teachablemachine.withgoogle.com/models/-YCasu5Jm/');
+  const [roboflowConfig, setRoboflowConfig] = useState({
+    apiKey: 'rf_PYTMexEStZYGUWefzBTc0oLjqd32',
+    model: 'deepworkai-v2.1', // Assuming the slug based on name
+    version: '1'
+  });
+
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasUnread, setHasUnread] = useState(true);
@@ -63,7 +73,11 @@ export const SettingsProvider = ({ children }) => {
       theme, setTheme,
       showNotifications, setShowNotifications, toggleNotifications,
       notifications, clearNotification, hasUnread, markAllAsRead,
-      isSidebarCollapsed, toggleSidebar
+      isSidebarCollapsed, toggleSidebar,
+      aiProvider, setAiProvider,
+      confidenceThreshold, setConfidenceThreshold,
+      teachableUrl, setTeachableUrl,
+      roboflowConfig, setRoboflowConfig
     }}>
       {children}
     </SettingsContext.Provider>

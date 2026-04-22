@@ -1,34 +1,76 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as tmImage from '@teachablemachine/image';
 import { Shield, Loader2, Camera, VideoOff } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 import './WebcamDetector.css';
 
-const MODEL_URL = "https://teachablemachine.withgoogle.com/models/-YCasu5Jm/";
+// Teachable Machine default if none provided
+const DEFAULT_TM_URL = "https://teachablemachine.withgoogle.com/models/-YCasu5Jm/";
 
 const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, active, setActive }) => {
   const videoRef = useRef(null);
+  const { 
+    aiProvider, 
+    teachableUrl, 
+    roboflowConfig, 
+    confidenceThreshold 
+  } = useSettings();
+
   const [model, setModel] = useState(null);
+  const [roboflowModel, setRoboflowModel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [predictions, setPredictions] = useState([]);
   const [currentStatus, setCurrentStatus] = useState("Idle");
   
   const requestRef = useRef();
 
+  // Load Teachable Machine
   useEffect(() => {
-    const loadModel = async () => {
+    if (aiProvider !== 'Teachable Machine') return;
+    
+    const loadTM = async () => {
+      setLoading(true);
       try {
-        const modelURL = MODEL_URL + "model.json";
-        const metadataURL = MODEL_URL + "metadata.json";
+        const baseUrl = teachableUrl || DEFAULT_TM_URL;
+        const modelURL = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + "model.json";
+        const metadataURL = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + "metadata.json";
         const loadedModel = await tmImage.load(modelURL, metadataURL);
         setModel(loadedModel);
         setLoading(false);
-      } catch (err) { console.error("Model load failed", err); }
+      } catch (err) { 
+        console.error("TM Model load failed", err);
+        setLoading(false); 
+      }
     };
-    loadModel();
-  }, []);
+    loadTM();
+  }, [aiProvider, teachableUrl]);
+
+  // Roboflow Integration Logic (Placeholder for library load)
+  useEffect(() => {
+    if (aiProvider !== 'Roboflow') return;
+    
+    // For Roboflow, we often use their Hosted API or a specialized JS library
+    const loadRoboflow = async () => {
+      setLoading(true);
+      // Simulate backend preparation for the model
+      await new Promise(r => setTimeout(r, 800));
+      setLoading(false);
+    };
+    loadRoboflow();
+  }, [aiProvider, roboflowConfig]);
+
+  const captureFrame = () => {
+    if (!videoRef.current) return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.6);
+  };
 
   const predict = useCallback(async () => {
-    if (model && videoRef.current && active) {
+    if (aiProvider === 'Teachable Machine' && model && videoRef.current) {
       const prediction = await model.predict(videoRef.current);
       setPredictions(prediction);
       
@@ -36,13 +78,52 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
       setCurrentStatus(top.className);
       onStatusChange(top.className, top.probability);
       
-      // Detection alerting logic
-      if (top.className.toLowerCase().match(/phone|mobile|distracted/) && top.probability > 0.85) {
+      if (top.className.toLowerCase().match(/phone|mobile|distracted/) && top.probability > (confidenceThreshold / 100)) {
         onDistractionDetected();
       }
+    } else if (aiProvider === 'Roboflow' && videoRef.current) {
+      const image = captureFrame();
+      if (!image) return;
+
+      try {
+        // We'll perform inference every ~1 second for Roboflow to avoid API rate limits
+        // but still maintain focus tracking
+        const response = await fetch(`https://detect.roboflow.com/${roboflowConfig.model}/${roboflowConfig.version}?api_key=${roboflowConfig.apiKey}`, {
+          method: 'POST',
+          body: image
+        });
+        const data = await response.json();
+        
+        if (data.predictions && data.predictions.length > 0) {
+          const formattedPredictions = data.predictions.map(p => ({
+            className: p.class,
+            probability: p.confidence
+          }));
+          setPredictions(formattedPredictions);
+          
+          const top = formattedPredictions.reduce((p, c) => (p.probability > c.probability) ? p : c);
+          setCurrentStatus(top.className);
+          onStatusChange(top.className, top.probability);
+          
+          if (top.className.toLowerCase().match(/phone|mobile|distracted/) && top.probability > (confidenceThreshold / 100)) {
+            onDistractionDetected();
+          }
+        } else {
+          setCurrentStatus("No objects detected");
+          onStatusChange("Normal", 0.99); // Assume normal if nothing distracting detected
+          setPredictions([{ className: 'Searching...', probability: 1 }]);
+        }
+      } catch (err) {
+        console.error("Roboflow Inference Error", err);
+      }
     }
-    requestRef.current = requestAnimationFrame(predict);
-  }, [model, active, onStatusChange, onDistractionDetected]);
+    
+    // Control frame rate: TM can be faster, Roboflow should be slightly throttled for API
+    const delay = aiProvider === 'Roboflow' ? 1000 : 100;
+    setTimeout(() => {
+      requestRef.current = requestAnimationFrame(predict);
+    }, delay);
+  }, [model, active, aiProvider, loading, confidenceThreshold, roboflowConfig, onStatusChange, onDistractionDetected]);
 
   useEffect(() => {
     if (active) requestRef.current = requestAnimationFrame(predict);

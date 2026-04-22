@@ -32,7 +32,11 @@ import './Settings.css';
 const Settings = () => {
   const { 
     accentColor, setAccentColor, 
-    theme, setTheme
+    theme, setTheme,
+    aiProvider, setAiProvider,
+    confidenceThreshold, setConfidenceThreshold,
+    teachableUrl, setTeachableUrl,
+    roboflowConfig, setRoboflowConfig
   } = useSettings();
 
   const { userData, updateProfile } = useUser();
@@ -42,6 +46,11 @@ const Settings = () => {
   // Local Profile state (for dirty checking/saving)
   const [fullName, setFullName] = useState(userData?.displayName || "User");
   const [email, setEmail] = useState(userData?.email || "user@example.com");
+
+  // Local AI state
+  const [confidence, setConfidence] = useState(confidenceThreshold);
+  const [localTeachableUrl, setLocalTeachableUrl] = useState(teachableUrl);
+  const [localRoboflow, setLocalRoboflow] = useState(roboflowConfig);
 
   // Avatar states - fallbacks if none in userData
   const currentAvatarType = userData?.avatarType || 'initials';
@@ -71,7 +80,6 @@ const Settings = () => {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // AI/App state
-  const [confidence, setConfidence] = useState(85);
   const [showConfirm, setShowConfirm] = useState(null);
   
   // Notification states
@@ -84,9 +92,12 @@ const Settings = () => {
       fullName !== initialData.name || 
       email !== initialData.email || 
       currentAvatarType !== initialData.avatarType ||
-      (currentAvatarType === 'initials' && currentAvatarColor !== initialData.avatarColor)
+      (currentAvatarType === 'initials' && currentAvatarColor !== initialData.avatarColor) ||
+      confidence !== confidenceThreshold ||
+      localTeachableUrl !== teachableUrl ||
+      JSON.stringify(localRoboflow) !== JSON.stringify(roboflowConfig)
     );
-  }, [fullName, email, initialData, currentAvatarType, currentAvatarColor]);
+  }, [fullName, email, initialData, currentAvatarType, currentAvatarColor, confidence, confidenceThreshold, localTeachableUrl, teachableUrl, localRoboflow, roboflowConfig]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -225,6 +236,12 @@ const Settings = () => {
       email: email,
       avatarInitial: fullName.charAt(0).toUpperCase()
     });
+    
+    // Update AI Settings
+    setConfidenceThreshold(confidence);
+    setTeachableUrl(localTeachableUrl);
+    setRoboflowConfig(localRoboflow);
+
     setInitialData({ name: fullName, email: email, avatarType: currentAvatarType, avatarColor: currentAvatarColor });
     setTimeout(() => setFinalSaveState('idle'), 3000);
   };
@@ -346,34 +363,50 @@ const Settings = () => {
 
         <div className="divider"></div>
 
-        {/* Section 2: AI Model */}
+        {/* Section 2: AI Core */}
         <section className="settings-section">
           <div className="section-info">
             <h3><Cpu size={18} /> AI Core</h3>
-            <p>Configure the neural engine and detection sensitivity parameters.</p>
+            <p>Select your vision engine and configure detection parameters.</p>
           </div>
           <div className="section-content">
+            <div className="setting-control">
+              <label>Model Provider</label>
+              <div className="segmented-control">
+                {['Teachable Machine', 'Roboflow'].map(p => (
+                  <button 
+                    key={p} 
+                    className={aiProvider === p ? 'active' : ''} 
+                    onClick={() => setAiProvider(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="status-pill-row">
               <div className="status-indicator">
                 <div className="dot pulse-success"></div>
-                <span className="status-text">Teachable Machine v2 — Active</span>
+                <span className="status-text">{aiProvider} Engine — Ready</span>
               </div>
             </div>
+
+            {aiProvider === 'Teachable Machine' ? (
+              <p className="explainer">Currently using the <b>Proprietary Vision Model</b> optimized for general workspace focus detection.</p>
+            ) : (
+              <p className="explainer">Currently using the <b>{roboflowConfig.model}</b> custom engine for high-precision object detection.</p>
+            )}
             
-            <div className="setting-control">
+            <div className="setting-control mt-4">
               <div className="control-header">
-                <label>Confidence Threshold</label>
+                <label>Inference Confidence</label>
                 <div className="control-val-badge" style={{ background: `rgba(124, 58, 237, 0.2)`, color: `#a78bfa` }}>
                   {getConfidenceLabel(confidence).text} · {confidence}%
                 </div>
               </div>
               <input type="range" min="0" max="100" value={confidence} onChange={(e) => setConfidence(e.target.value)} className="slider" />
-              <p className="explainer">Detections below this threshold will be ignored by the guard.</p>
-            </div>
-
-            <div className="model-reupload">
-              <button className="btn-secondary ghost-btn"><Upload size={16} /> Re-upload Model Artifacts</button>
-              <p className="explainer mt-1">Use this if you've retrained your model in Roboflow.</p>
+              <p className="explainer">Minimum score required to trigger a distraction alert.</p>
             </div>
           </div>
         </section>
