@@ -29,32 +29,26 @@ import { useSettings } from '../context/SettingsContext';
 import './Settings.css';
 
 const Settings = () => {
-  const { accentColor, setAccentColor, theme, setTheme } = useSettings();
+  const { 
+    accentColor, setAccentColor, 
+    theme, setTheme,
+    avatarColor, setAvatarColor,
+    avatarType, setAvatarType,
+    avatarSource, setAvatarSource,
+    userName, setUserName
+  } = useSettings();
+  
   const fileInputRef = useRef(null);
   
-  // Stable refs for OTP
-  const otpRef0 = useRef(null);
-  const otpRef1 = useRef(null);
-  const otpRef2 = useRef(null);
-  const otpRef3 = useRef(null);
-  const otpRefs = [otpRef0, otpRef1, otpRef2, otpRef3];
-  
-  // Profile state
-  const [fullName, setFullName] = useState("Krish");
+  // Local Profile state (for dirty checking/saving)
+  const [fullName, setFullName] = useState(userName);
   const [email, setEmail] = useState("krish@example.com");
-  
-  // Avatar states
-  const [avatarType, setAvatarType] = useState('initials');
-  const [avatarSource, setAvatarSource] = useState(null);
-  const [avatarColor, setAvatarColor] = useState('#6366f1');
-  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
-  const [showPresetPicker, setShowPresetPicker] = useState(false);
 
   const [initialData, setInitialData] = useState({ 
-    name: "Krish", 
+    name: userName, 
     email: "krish@example.com",
-    avatarType: 'initials',
-    avatarColor: '#6366f1'
+    avatarType: avatarType,
+    avatarColor: avatarColor
   });
   
   // Verification & Save states
@@ -62,6 +56,9 @@ const Settings = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
   const [verifyState, setVerifyState] = useState('idle'); // 'idle' | 'verifying' | 'success'
   const [finalSaveState, setFinalSaveState] = useState('idle'); // 'idle' | 'success'
+  const [resendTimer, setResendTimer] = useState(0);
+  const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
   // AI/App state
   const [confidence, setConfidence] = useState(85);
@@ -119,6 +116,15 @@ const Settings = () => {
     }
   };
 
+  // Countdown timer logic
+  useEffect(() => {
+    let timer;
+    if (resendTimer > 0) {
+      timer = setInterval(() => setResendTimer(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendTimer]);
+
   const verifyOtp = () => {
     const code = otp.join('');
     setVerifyState('verifying');
@@ -126,8 +132,10 @@ const Settings = () => {
     setTimeout(() => {
       if (code === '1234') {
         setVerifyState('success');
+        // Wait 1.5s for success animation then close
         setTimeout(() => {
           setIsVerifying(false);
+          setVerifyState('idle');
           completeSave();
         }, 1500);
       } else {
@@ -136,7 +144,16 @@ const Settings = () => {
         setOtp(['', '', '', '']);
         otpRefs[0].current.focus();
       }
-    }, 1000);
+    }, 1200);
+  };
+
+  const handleResend = () => {
+    if (resendTimer === 0) {
+      setResendTimer(60);
+      setOtp(['', '', '', '']);
+      otpRefs[0].current.focus();
+      // Logic to resend code would go here
+    }
   };
 
   const handleSaveAttempt = () => {
@@ -144,6 +161,7 @@ const Settings = () => {
       setIsVerifying(true);
       setOtp(['', '', '', '']);
       setVerifyState('idle');
+      setResendTimer(60); // Start countdown when modal opens
     } else {
       completeSave();
     }
@@ -151,6 +169,7 @@ const Settings = () => {
 
   const completeSave = () => {
     setFinalSaveState('success');
+    setUserName(fullName); // Update global username
     setInitialData({ name: fullName, email: email, avatarType, avatarColor });
     setTimeout(() => setFinalSaveState('idle'), 3000);
   };
@@ -189,7 +208,13 @@ const Settings = () => {
             <div className="profile-edit-area">
               <div className="avatar-upload-enhanced">
                 <div className="avatar-initials-container">
-                  <div className="avatar-preview-circle" style={{ background: avatarType === 'initials' ? `linear-gradient(135deg, ${avatarColor}, var(--bg-dark))` : 'none' }}>
+                  <div 
+                    className="avatar-preview-circle" 
+                    style={{ 
+                      background: avatarType === 'initials' ? `linear-gradient(135deg, ${avatarColor}, #1e2035)` : 'none',
+                      boxShadow: `0 4px 12px ${avatarColor}40`
+                    }}
+                  >
                     {avatarType === 'initials' ? (
                       <span className="initials-text">{fullName.charAt(0)}</span>
                     ) : (
@@ -197,38 +222,38 @@ const Settings = () => {
                     )}
                   </div>
                   {showAvatarMenu && (
-                    <div className="avatar-dropdown glass-effect">
-                      {showPresetPicker ? (
-                        <div className="preset-picker-v2">
-                          <div className="dropdown-header">
-                            <button className="btn-back" onClick={() => setShowPresetPicker(false)}><ChevronLeft size={14} /></button>
-                            <span>Pick a Color</span>
-                          </div>
-                          <div className="preset-grid">
-                            {avatarPresets.map(color => (
-                              <button 
-                                key={color} 
-                                className={`color-option ${avatarColor === color ? 'active' : ''}`} 
-                                style={{ background: color }} 
-                                onClick={() => selectPreset(color)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="dropdown-title">Change Avatar</div>
-                          <button className="dropdown-item" onClick={() => setShowPresetPicker(true)}><Palette size={14} /> <span>Choose Preset</span></button>
-                          <button className="dropdown-item" onClick={() => fileInputRef.current.click()}><ImageIcon size={14} /> <span>Upload Image</span></button>
-                        </>
-                      )}
+                    <div className="avatar-dropdown-v3 glass-effect fade-in-down">
+                      <div className="dropdown-label">Pick avatar color</div>
+                      <div className="preset-swatches-row">
+                        {avatarPresets.map(color => (
+                          <button 
+                            key={color} 
+                            className={`swatch-btn ${avatarColor === color ? 'active' : ''}`} 
+                            style={{ background: color }} 
+                            onClick={() => selectPreset(color)}
+                          />
+                        ))}
+                      </div>
+                      
+                      <div className="dropdown-divider"></div>
+                      
+                      <button className="dropdown-action-row" onClick={() => fileInputRef.current.click()}>
+                        <ImageIcon size={14} /> 
+                        <span>Upload custom image</span>
+                      </button>
+                      
+                      <div className="dropdown-divider"></div>
+                      
+                      <button className="btn-close-dropdown" onClick={() => setShowAvatarMenu(false)}>
+                        <X size={12} /> Close
+                      </button>
                     </div>
                   )}
                   <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleFileUpload} />
                 </div>
                 <div className="avatar-actions">
-                  <button className="btn-avatar-edit-v2" onClick={() => { setShowAvatarMenu(!showAvatarMenu); setShowPresetPicker(false); }}>
-                    {showAvatarMenu ? 'Close Menu' : 'Edit Avatar'}
+                  <button className="btn-avatar-edit-v2 ghost-btn" onClick={() => setShowAvatarMenu(!showAvatarMenu)}>
+                    {showAvatarMenu ? 'Editing...' : 'Edit Avatar'}
                   </button>
                   <p className="text-xs text-dim">{avatarType === 'initials' ? 'Using letter-based preset' : 'Custom photo uploaded'}</p>
                 </div>
@@ -239,14 +264,14 @@ const Settings = () => {
                   <label>Full Name</label>
                   <div className="input-wrapper">
                     <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your name" />
-                    <Pencil size={14} className="input-icon" />
+                    <div className="input-icon-right"><Pencil size={14} /></div>
                   </div>
                 </div>
                 <div className="input-group">
                   <label>Email Address</label>
                   <div className="input-wrapper">
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <Pencil size={14} className="input-icon" />
+                    <div className="input-icon-right"><Pencil size={14} /></div>
                   </div>
                   <p className="text-xs text-dim italic mt-1">Changing email requires verification</p>
                 </div>
@@ -273,25 +298,18 @@ const Settings = () => {
             <p>Configure the neural engine and detection sensitivity parameters.</p>
           </div>
           <div className="section-content">
-            <div className="status-row-enhanced">
-              <div className="status-main">
-                <span className="status-label">Model Engine Status</span>
-                <div className="status-indicator">
-                  <div className="dot pulse-success"></div>
-                  <span>Teachable Machine v2 — Active</span>
-                </div>
-                <p className="text-xs text-dim mt-1">Last updated: Apr 6, 2026</p>
+            <div className="status-pill-row">
+              <div className="status-indicator">
+                <div className="dot pulse-success"></div>
+                <span className="status-text">Teachable Machine v2 — Active</span>
               </div>
             </div>
             
             <div className="setting-control">
               <div className="control-header">
                 <label>Confidence Threshold</label>
-                <div className="control-val-wrapper">
-                  <span className="confidence-mode-badge" style={{ background: `${getConfidenceLabel(confidence).color}15`, color: getConfidenceLabel(confidence).color }}>
-                    {getConfidenceLabel(confidence).text}
-                  </span>
-                  <span className="control-val">{confidence}%</span>
+                <div className="control-val-badge" style={{ background: `rgba(124, 58, 237, 0.2)`, color: `#a78bfa` }}>
+                  {getConfidenceLabel(confidence).text} · {confidence}%
                 </div>
               </div>
               <input type="range" min="0" max="100" value={confidence} onChange={(e) => setConfidence(e.target.value)} className="slider" />
@@ -299,7 +317,7 @@ const Settings = () => {
             </div>
 
             <div className="model-reupload">
-              <button className="btn-secondary"><Upload size={16} /> Re-upload Model Artifacts</button>
+              <button className="btn-secondary ghost-btn"><Upload size={16} /> Re-upload Model Artifacts</button>
               <p className="explainer mt-1">Use this if you've retrained your model in Roboflow.</p>
             </div>
           </div>
@@ -327,6 +345,7 @@ const Settings = () => {
                     className={`color-swatch-ring ${accentColor === color.hex ? 'active' : ''}`} 
                     onClick={() => setAccentColor(color.hex)} 
                     title={color.name}
+                    style={{ '--accent-ring': color.hex }}
                   >
                     <div className="swatch-inner" style={{ background: color.hex }}></div>
                   </button>
@@ -352,9 +371,9 @@ const Settings = () => {
                 { label: 'Desktop notifications', desc: 'Show system-level notifications for high-priority alerts.', state: notifDesktop, set: setNotifDesktop },
                 { label: 'End-of-session summary', desc: 'Receive a full focus report immediately after session ends.', state: notifSummary, set: setNotifSummary }
               ].map((notif, idx) => (
-                <div className="toggle-control" key={idx}>
+                <div className="toggle-row" key={idx} onClick={() => notif.set(!notif.state)}>
                   <div className="toggle-text"><span className="toggle-label">{notif.label}</span><p className="text-xs text-dim">{notif.desc}</p></div>
-                  <button className={`toggle-switch ${notif.state ? 'on' : ''}`} onClick={() => notif.set(!notif.state)}></button>
+                  <button className={`toggle-switch ${notif.state ? 'on' : ''}`} onClick={(e) => { e.stopPropagation(); notif.set(!notif.state); }}></button>
                 </div>
               ))}
             </div>
@@ -370,9 +389,9 @@ const Settings = () => {
             <p>Manage your exports and clear sensitive history logs.</p>
           </div>
           <div className="section-content">
-            <div className="btn-group">
-              <button className="btn-secondary" onClick={() => alert('Preparing JSON Export...')}><Download size={16} /> Export (JSON)</button>
-              <button className="btn-secondary" onClick={() => alert('Preparing CSV Export...')}><Download size={16} /> Export (CSV)</button>
+            <div className="export-btn-group">
+              <button className="btn-export" onClick={() => alert('Preparing JSON Export...')}><Download size={16} /> Export (JSON)</button>
+              <button className="btn-export" onClick={() => alert('Preparing CSV Export...')}><Download size={16} /> Export (CSV)</button>
             </div>
             <div className="danger-zone">
               <div className="danger-header"><AlertTriangle size={14} className="text-danger" /><span>Danger Zone</span></div>
@@ -387,56 +406,89 @@ const Settings = () => {
         {/* Verification Modal (OTP) */}
         {isVerifying && (
           <div className="modal-overlay">
-            <div className="modal-content glass-effect verification-modal">
-              <div className="modal-close" onClick={() => setIsVerifying(false)}><X size={20} /></div>
-              <div className={`verification-icon-wrap ${verifyState}`}>
-                {verifyState === 'success' ? <ShieldCheck size={48} className="text-success" /> : <Mail size={44} className="text-brand" />}
-                {verifyState === 'success' && <div className="success-ring-animation"></div>}
-              </div>
+            <div className="modal-content verification-modal fade-in-scale">
+              <button className="modal-close-btn" onClick={() => setIsVerifying(false)}><X size={20} /></button>
               
-              <h2>Confirm Email Update</h2>
-              <p>We've sent a 4-digit code to <strong>{email}</strong>. Enter it below to secure your changes.</p>
-              
-              <div className={`otp-input-container ${verifyState === 'success' ? 'shrink' : ''}`}>
-                {otp.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={otpRefs[idx]}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="otp-field"
-                    autoFocus={idx === 0}
-                  />
-                ))}
-              </div>
-              
-              <div className="modal-actions-v2">
-                <button 
-                  className={`btn-verify-otp ${verifyState === 'success' ? 'success' : ''}`}
-                  onClick={verifyOtp}
-                  disabled={otp.join('').length < 4 || verifyState !== 'idle'}
-                >
-                  {verifyState === 'verifying' ? 'Verifying...' : (verifyState === 'success' ? 'Verified!' : 'Complete Verification')}
-                  {verifyState === 'idle' && <ArrowRight size={16} />}
-                </button>
-                <p className="text-xs text-dim mt-4">Didn't receive code? <span className="text-brand cursor-pointer">Resend Code</span></p>
-              </div>
+              {verifyState === 'success' ? (
+                <div className="success-state-view">
+                  <div className="check-ring">
+                    <CheckCircle2 size={64} className="text-success" />
+                  </div>
+                  <h2>Email Updated!</h2>
+                  <p>Your profile has been secured with your new address.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="modal-icon-header">
+                    <div className="mail-icon-circle">
+                      <Mail size={32} />
+                    </div>
+                  </div>
+                  
+                  <h2>Confirm Email Update</h2>
+                  <p className="modal-description">
+                    We've sent a 4-digit code to <strong>{email}</strong>. Enter it below to secure your changes.
+                  </p>
+                  
+                  <div className="otp-input-container">
+                    {otp.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={otpRefs[idx]}
+                        type="text"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        className={`otp-field ${digit ? 'filled' : ''}`}
+                        autoFocus={idx === 0}
+                      />
+                    ))}
+                  </div>
+                  
+                  <div className="modal-actions-v2">
+                    <button 
+                      className={`btn-verify-otp ${otp.join('').length === 4 ? 'ready pulse-trigger' : ''}`}
+                      onClick={verifyOtp}
+                      disabled={otp.join('').length < 4 || verifyState === 'verifying'}
+                    >
+                      {verifyState === 'verifying' ? 'Verifying...' : 'Complete Verification'}
+                    </button>
+                    
+                    <div className="resend-section">
+                      {resendTimer > 0 ? (
+                        <p className="text-xs text-dim">Resend code in <span className="timer-val">{resendTimer}s</span></p>
+                      ) : (
+                        <button className="btn-resend-link" onClick={handleResend}>Didn't receive code? <span>Resend</span></button>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
 
         {/* Standard Confirms */}
         {showConfirm && (
-          <div className="modal-overlay">
-            <div className="modal-content glass-effect">
-              <AlertTriangle size={48} className="text-danger" />
-              <h2>Are you absolutely sure?</h2><p>This action is irreversible and will permanently remove your data.</p>
-              <div className="modal-actions">
-                <button className="btn-secondary" onClick={() => setShowConfirm(null)}>Cancel</button>
-                <button className="btn-danger-solid-imposing" onClick={() => handleAction(showConfirm)}>Confirm Destruction</button>
+          <div className="modal-overlay danger-backdrop">
+            <div className="modal-content danger-modal fade-in-scale">
+              <button className="modal-close-btn" onClick={() => setShowConfirm(null)}><X size={20} /></button>
+              
+              <div className="danger-icon-header">
+                <AlertTriangle size={48} className="text-danger" />
+              </div>
+              
+              <h2>Are you absolutely sure?</h2>
+              <p className="modal-description">
+                This action is irreversible and will permanently remove your data from our servers.
+              </p>
+              
+              <div className="danger-modal-actions">
+                <button className="btn-cancel-modal" onClick={() => setShowConfirm(null)}>Cancel</button>
+                <button className="btn-danger-confirm" onClick={() => { alert('Action Confirmed'); setShowConfirm(null); }}>
+                  {showConfirm === 'clear' ? 'Yes, Reset History' : 'Confirm Destruction'}
+                </button>
               </div>
             </div>
           </div>

@@ -130,7 +130,18 @@ const CommandPalette = ({ isOpen, onClose }) => {
 };
 
 const AppContent = () => {
-  const { toggleNotifications, showNotifications, notifications, theme, hasUnread, isSidebarCollapsed, toggleSidebar } = useSettings();
+  const { 
+    toggleNotifications, 
+    showNotifications, 
+    theme, 
+    hasUnread, 
+    isSidebarCollapsed, 
+    toggleSidebar,
+    userName,
+    avatarColor,
+    avatarType,
+    avatarSource
+  } = useSettings();
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [systemTheme, setSystemTheme] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Dark' : 'Light'
@@ -195,9 +206,22 @@ const AppContent = () => {
           <div className="sidebar-footer">
             <div className="sidebar-divider"></div>
             <div className="user-profile-row-v3">
-              <div className="user-avatar-mini">K</div>
+              <div 
+                className="user-avatar-mini" 
+                style={{ 
+                  background: avatarType === 'initials' ? `linear-gradient(135deg, ${avatarColor}, #1e2035)` : 'none',
+                  border: avatarType === 'upload' ? 'none' : '2px solid rgba(255,255,255,0.1)',
+                  boxShadow: `0 4px 10px ${avatarColor}40`
+                }}
+              >
+                {avatarType === 'initials' ? (
+                  userName.charAt(0)
+                ) : (
+                  <img src={avatarSource} alt="User" className="avatar-img-actual" />
+                )}
+              </div>
               <div className="user-details-mini sidebar-label">
-                <span className="user-name-mini">Krish</span>
+                <span className="user-name-mini">{userName}</span>
                 <div className="user-status-mini">
                   <div className="status-dot-mini"></div>
                   <span>Premium</span>
