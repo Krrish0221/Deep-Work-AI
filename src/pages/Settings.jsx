@@ -26,29 +26,33 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
+import { useUser } from '../context/UserContext';
 import './Settings.css';
 
 const Settings = () => {
   const { 
     accentColor, setAccentColor, 
-    theme, setTheme,
-    avatarColor, setAvatarColor,
-    avatarType, setAvatarType,
-    avatarSource, setAvatarSource,
-    userName, setUserName
+    theme, setTheme
   } = useSettings();
+
+  const { userData, updateProfile } = useUser();
   
   const fileInputRef = useRef(null);
   
   // Local Profile state (for dirty checking/saving)
-  const [fullName, setFullName] = useState(userName);
-  const [email, setEmail] = useState("krish@example.com");
+  const [fullName, setFullName] = useState(userData?.displayName || "User");
+  const [email, setEmail] = useState(userData?.email || "user@example.com");
+
+  // Avatar states - fallbacks if none in userData
+  const currentAvatarType = userData?.avatarType || 'initials';
+  const currentAvatarColor = userData?.avatarColor || '#7c3aed';
+  const currentAvatarSource = userData?.avatarSource || null;
 
   const [initialData, setInitialData] = useState({ 
-    name: userName, 
-    email: "krish@example.com",
-    avatarType: avatarType,
-    avatarColor: avatarColor
+    name: userData?.displayName || "User", 
+    email: userData?.email || "user@example.com",
+    avatarType: currentAvatarType,
+    avatarColor: currentAvatarColor
   });
   
   // Verification & Save states
@@ -59,6 +63,12 @@ const Settings = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  
+  // Change Password states
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // AI/App state
   const [confidence, setConfidence] = useState(85);
@@ -73,27 +83,31 @@ const Settings = () => {
     return (
       fullName !== initialData.name || 
       email !== initialData.email || 
-      avatarType !== initialData.avatarType ||
-      (avatarType === 'initials' && avatarColor !== initialData.avatarColor)
+      currentAvatarType !== initialData.avatarType ||
+      (currentAvatarType === 'initials' && currentAvatarColor !== initialData.avatarColor)
     );
-  }, [fullName, email, initialData, avatarType, avatarColor]);
+  }, [fullName, email, initialData, currentAvatarType, currentAvatarColor]);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarSource(reader.result);
-        setAvatarType('upload');
+      reader.onloadend = async () => {
+        await updateProfile({ 
+          avatarSource: reader.result, 
+          avatarType: 'upload' 
+        });
         setShowAvatarMenu(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const selectPreset = (color) => {
-    setAvatarColor(color);
-    setAvatarType('initials');
+  const selectPreset = async (color) => {
+    await updateProfile({ 
+      avatarColor: color, 
+      avatarType: 'initials' 
+    });
     setShowPresetPicker(false);
     setShowAvatarMenu(false);
   };
@@ -167,10 +181,51 @@ const Settings = () => {
     }
   };
 
-  const completeSave = () => {
+  const isStrongPassword = (pass) => {
+    const minLength = 8;
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    return pass.length >= minLength && hasUpper && hasLower && hasNumber && hasSpecial;
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    if (passwords.new !== passwords.confirm) {
+      setPasswordError("New passwords don't match.");
+      return;
+    }
+
+    if (!isStrongPassword(passwords.new)) {
+      setPasswordError("New password must be at least 8 characters, with an uppercase letter, a number, and a special character.");
+      return;
+    }
+
+    // Simulate API call
+    setIsVerifying(true);
+    await new Promise(r => setTimeout(r, 1000));
+    setIsVerifying(false);
+    
+    // Simulate success
+    setPasswordSuccess(true);
+    setTimeout(() => {
+      setPasswordSuccess(false);
+      setShowChangePassword(false);
+      setPasswords({ current: '', new: '', confirm: '' });
+    }, 2000);
+  };
+
+  const completeSave = async () => {
     setFinalSaveState('success');
-    setUserName(fullName); // Update global username
-    setInitialData({ name: fullName, email: email, avatarType, avatarColor });
+    await updateProfile({
+      displayName: fullName,
+      email: email,
+      avatarInitial: fullName.charAt(0).toUpperCase()
+    });
+    setInitialData({ name: fullName, email: email, avatarType: currentAvatarType, avatarColor: currentAvatarColor });
     setTimeout(() => setFinalSaveState('idle'), 3000);
   };
 
@@ -211,14 +266,14 @@ const Settings = () => {
                   <div 
                     className="avatar-preview-circle" 
                     style={{ 
-                      background: avatarType === 'initials' ? `linear-gradient(135deg, ${avatarColor}, #1e2035)` : 'none',
-                      boxShadow: `0 4px 12px ${avatarColor}40`
+                      background: currentAvatarType === 'initials' ? `linear-gradient(135deg, ${currentAvatarColor}, #1e2035)` : 'none',
+                      boxShadow: `0 4px 12px ${currentAvatarColor}40`
                     }}
                   >
-                    {avatarType === 'initials' ? (
+                    {currentAvatarType === 'initials' ? (
                       <span className="initials-text">{fullName.charAt(0)}</span>
                     ) : (
-                      <img src={avatarSource} alt="Profile" className="avatar-img-actual" />
+                      <img src={currentAvatarSource} alt="Profile" className="avatar-img-actual" />
                     )}
                   </div>
                   {showAvatarMenu && (
@@ -228,7 +283,7 @@ const Settings = () => {
                         {avatarPresets.map(color => (
                           <button 
                             key={color} 
-                            className={`swatch-btn ${avatarColor === color ? 'active' : ''}`} 
+                            className={`swatch-btn ${currentAvatarColor === color ? 'active' : ''}`} 
                             style={{ background: color }} 
                             onClick={() => selectPreset(color)}
                           />
@@ -255,7 +310,7 @@ const Settings = () => {
                   <button className="btn-avatar-edit-v2 ghost-btn" onClick={() => setShowAvatarMenu(!showAvatarMenu)}>
                     {showAvatarMenu ? 'Editing...' : 'Edit Avatar'}
                   </button>
-                  <p className="text-xs text-dim">{avatarType === 'initials' ? 'Using letter-based preset' : 'Custom photo uploaded'}</p>
+                  <p className="text-xs text-dim">{currentAvatarType === 'initials' ? 'Using letter-based preset' : 'Custom photo uploaded'}</p>
                 </div>
               </div>
 
@@ -382,13 +437,23 @@ const Settings = () => {
 
         <div className="divider"></div>
 
-        {/* Section 5: Data & Privacy */}
+        {/* Section 5: Security & Privacy */}
         <section className="settings-section">
           <div className="section-info">
-            <h3><Lock size={18} /> Data & Privacy</h3>
-            <p>Manage your exports and clear sensitive history logs.</p>
+            <h3><Lock size={18} /> Security & Privacy</h3>
+            <p>Manage your password, data exports, and sensitive logs.</p>
           </div>
           <div className="section-content">
+            <div className="setting-control" style={{ marginBottom: '24px' }}>
+              <label>Password Authentication</label>
+              <button 
+                className="btn-secondary ghost-btn" 
+                onClick={() => setShowChangePassword(true)}
+              >
+                Change Password
+              </button>
+            </div>
+            
             <div className="export-btn-group">
               <button className="btn-export" onClick={() => alert('Preparing JSON Export...')}><Download size={16} /> Export (JSON)</button>
               <button className="btn-export" onClick={() => alert('Preparing CSV Export...')}><Download size={16} /> Export (CSV)</button>
@@ -490,6 +555,82 @@ const Settings = () => {
                   {showConfirm === 'clear' ? 'Yes, Reset History' : 'Confirm Destruction'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Change Password Modal */}
+        {showChangePassword && (
+          <div className="modal-overlay">
+            <div className="modal-content fade-in-scale" style={{ width: '420px', textAlign: 'left', padding: '36px' }}>
+              <button className="modal-close-btn" onClick={() => setShowChangePassword(false)}><X size={20} /></button>
+              
+              {!passwordSuccess ? (
+                <>
+                  <div className="modal-icon-header" style={{ marginBottom: '24px' }}>
+                    <div className="icon-circle" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed' }}>
+                      <Lock size={24} />
+                    </div>
+                  </div>
+                  
+                  <h2 style={{ fontSize: '22px', marginBottom: '8px', color: '#fff' }}>Change Password</h2>
+                  <p style={{ color: 'var(--text-dim)', marginBottom: '24px', fontSize: '14px' }}>
+                    Ensure your account is using a long, random password to stay secure.
+                  </p>
+                  
+                  <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="auth-input-group">
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.7)', marginBottom: '6px', display: 'block' }}>Current Password</label>
+                      <input 
+                        type="password" 
+                        value={passwords.current} 
+                        onChange={(e) => setPasswords({...passwords, current: e.target.value})} 
+                        style={{ width: '100%', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '12px 16px', color: '#fff', fontSize: '14px' }}
+                        required 
+                      />
+                    </div>
+                    
+                    <div className="auth-input-group">
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.7)', marginBottom: '6px', display: 'block' }}>New Password</label>
+                      <input 
+                        type="password" 
+                        value={passwords.new} 
+                        onChange={(e) => setPasswords({...passwords, new: e.target.value})} 
+                        style={{ width: '100%', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '12px 16px', color: '#fff', fontSize: '14px' }}
+                        required 
+                      />
+                    </div>
+                    
+                    <div className="auth-input-group">
+                      <label style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255, 255, 255, 0.7)', marginBottom: '6px', display: 'block' }}>Confirm New Password</label>
+                      <input 
+                        type="password" 
+                        value={passwords.confirm} 
+                        onChange={(e) => setPasswords({...passwords, confirm: e.target.value})} 
+                        style={{ width: '100%', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', padding: '12px 16px', color: '#fff', fontSize: '14px' }}
+                        required 
+                      />
+                    </div>
+                    
+                    {passwordError && <p className="auth-error-text" style={{ margin: '0' }}>{passwordError}</p>}
+                    
+                    <div className="danger-modal-actions" style={{ marginTop: '16px' }}>
+                      <button type="button" className="btn-cancel-modal" onClick={() => setShowChangePassword(false)}>Cancel</button>
+                      <button type="submit" className="btn-danger-confirm" style={{ flex: 2, margin: 0, background: '#7c3aed', borderColor: '#7c3aed' }} disabled={isVerifying}>
+                        {isVerifying ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <div className="success-state-view">
+                  <div className="check-ring">
+                    <CheckCircle2 size={64} className="text-success" />
+                  </div>
+                  <h2>Password Updated!</h2>
+                  <p>Your new password is now active.</p>
+                </div>
+              )}
             </div>
           </div>
         )}

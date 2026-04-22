@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   History, 
@@ -16,7 +16,11 @@ import {
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import ForgotPassword from './pages/ForgotPassword';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
+import { UserProvider, useUser } from './context/UserContext';
 import './App.css';
 
 const NotificationDropdown = () => {
@@ -136,12 +140,11 @@ const AppContent = () => {
     theme, 
     hasUnread, 
     isSidebarCollapsed, 
-    toggleSidebar,
-    userName,
-    avatarColor,
-    avatarType,
-    avatarSource
+    toggleSidebar
   } = useSettings();
+  
+  const { userData, isLoading, logout } = useUser();
+  
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const [systemTheme, setSystemTheme] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Dark' : 'Light'
@@ -172,9 +175,24 @@ const AppContent = () => {
     document.documentElement.setAttribute('data-theme', activeTheme.toLowerCase());
   }, [theme, systemTheme]);
 
+  if (isLoading) {
+    return <div className="app-layout" style={{ justifyContent: 'center', alignItems: 'center' }}>Loading...</div>;
+  }
+
+  if (!userData) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
   return (
-    <BrowserRouter>
-      <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Sidebar */}
         <aside className="sidebar glass-effect">
           <button className="sidebar-toggle-v3" onClick={toggleSidebar} title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}>
@@ -188,7 +206,7 @@ const AppContent = () => {
             </div>
             
             <nav className="nav-menu">
-              <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} data-name="Dashboard">
+              <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} data-name="Dashboard">
                 <LayoutDashboard size={20} />
                 <span className="sidebar-label">Dashboard</span>
               </NavLink>
@@ -209,25 +227,20 @@ const AppContent = () => {
               <div 
                 className="user-avatar-mini" 
                 style={{ 
-                  background: avatarType === 'initials' ? `linear-gradient(135deg, ${avatarColor}, #1e2035)` : 'none',
-                  border: avatarType === 'upload' ? 'none' : '2px solid rgba(255,255,255,0.1)',
-                  boxShadow: `0 4px 10px ${avatarColor}40`
+                  background: `linear-gradient(135deg, ${userData.avatarColor || '#7c3aed'}, #1e2035)`,
+                  boxShadow: `0 4px 10px ${userData.avatarColor || '#7c3aed'}40`
                 }}
               >
-                {avatarType === 'initials' ? (
-                  userName.charAt(0)
-                ) : (
-                  <img src={avatarSource} alt="User" className="avatar-img-actual" />
-                )}
+                {userData.avatarInitial}
               </div>
               <div className="user-details-mini sidebar-label">
-                <span className="user-name-mini">{userName}</span>
+                <span className="user-name-mini">{userData.displayName}</span>
                 <div className="user-status-mini">
                   <div className="status-dot-mini"></div>
-                  <span>Premium</span>
+                  <span>{userData.plan || 'Premium'}</span>
                 </div>
               </div>
-              <button className="logout-btn-v3" title="Sign Out">
+              <button className="logout-btn-v3" title="Sign Out" onClick={logout}>
                 <LogOut size={18} />
               </button>
             </div>
@@ -261,22 +274,29 @@ const AppContent = () => {
           </header>
 
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/signup" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
         <CommandPalette isOpen={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} />
       </div>
-    </BrowserRouter>
   );
 };
 
 function App() {
   return (
-    <SettingsProvider>
-      <AppContent />
-    </SettingsProvider>
+    <BrowserRouter>
+      <UserProvider>
+        <SettingsProvider>
+          <AppContent />
+        </SettingsProvider>
+      </UserProvider>
+    </BrowserRouter>
   );
 }
 

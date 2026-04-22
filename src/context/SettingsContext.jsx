@@ -11,12 +11,6 @@ export const SettingsProvider = ({ children }) => {
     localStorage.getItem('sidebar_collapsed') === 'true'
   );
 
-  // User Profile State
-  const [userName, setUserName] = useState("Krish");
-  const [avatarColor, setAvatarColorState] = useState('#6366f1');
-  const [avatarType, setAvatarType] = useState('initials'); // 'initials' | 'upload'
-  const [avatarSource, setAvatarSource] = useState(null);
-  
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasUnread, setHasUnread] = useState(true);
@@ -69,11 +63,7 @@ export const SettingsProvider = ({ children }) => {
       theme, setTheme,
       showNotifications, setShowNotifications, toggleNotifications,
       notifications, clearNotification, hasUnread, markAllAsRead,
-      isSidebarCollapsed, toggleSidebar,
-      userName, setUserName,
-      avatarColor, setAvatarColor: setAvatarColorState,
-      avatarType, setAvatarType,
-      avatarSource, setAvatarSource
+      isSidebarCollapsed, toggleSidebar
     }}>
       {children}
     </SettingsContext.Provider>
