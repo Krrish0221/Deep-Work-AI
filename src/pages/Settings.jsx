@@ -88,6 +88,7 @@ const Settings = () => {
   const [notifDesktop, setNotifDesktop] = useState(true);
   const [notifSummary, setNotifSummary] = useState(false);
   const [showDeployOwn, setShowDeployOwn] = useState(false);
+  const [isModelLive, setIsModelLive] = useState(false);
 
   const isDirty = useMemo(() => {
     return (
@@ -443,7 +444,12 @@ const Settings = () => {
                 </div>
                 
                 <div className="deploy-custom-section mt-4">
-                  {!showDeployOwn ? (
+                  {isModelLive ? (
+                    <div className="model-live-status fade-in">
+                      <div className="dot pulse-success"></div>
+                      <span className="status-text-v2">Your custom model will be live in a few moments...</span>
+                    </div>
+                  ) : !showDeployOwn ? (
                     <button className="btn-secondary ghost-btn btn-xs" onClick={() => setShowDeployOwn(true)}>
                       Want to deploy your own model?
                     </button>
@@ -460,6 +466,7 @@ const Settings = () => {
                           />
                           <button className="btn-save-key" onClick={() => {
                             setRoboflowConfig(localRoboflow);
+                            setIsModelLive(true);
                             setShowDeployOwn(false);
                           }}>
                             Update
