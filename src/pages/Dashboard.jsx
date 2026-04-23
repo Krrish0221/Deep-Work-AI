@@ -69,8 +69,20 @@ const Dashboard = () => {
         setFocusTime(prev => prev + 1);
         setCurrentStreak(prev => prev + 1);
       }, 1000);
-    } else if (sessionActive && status !== "Idle" && !status.toLowerCase().includes('normal') && !status.toLowerCase().includes('focus')) {
-      setCurrentStreak(0);
+    } else if (sessionActive && status !== "Idle") {
+      const lowerStatus = status.toLowerCase();
+      const isActuallyDistracted = lowerStatus.includes('phone') || 
+                                   lowerStatus.includes('looking away') || 
+                                   lowerStatus.includes('away from desk') || 
+                                   lowerStatus.includes('multiple');
+      
+      if (isActuallyDistracted) {
+        setCurrentStreak(0);
+      } else {
+        // Maintain streak for Focused, Yawning, etc.
+        setFocusTime(prev => prev + 1);
+        setCurrentStreak(prev => prev + 1);
+      }
     }
     return () => clearInterval(interval);
   }, [sessionActive, status]);

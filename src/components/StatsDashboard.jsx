@@ -29,8 +29,14 @@ const formatDigits = (totalSeconds) => {
 };
 
 export const FocusTimerHero = ({ focusTime, sessionActive, status, onToggle, loading, startTime }) => {
-  const stateLabel = sessionActive ? (status === 'Normal' ? 'FOCUSED' : 'DISTRACTED') : 'STANDBY';
-  const stateColor = sessionActive ? (status === 'Normal' ? 'var(--status-good)' : 'var(--status-danger)') : 'var(--text-dim)';
+  const lowerStatus = (status || "").toLowerCase();
+  const isDistracted = lowerStatus.includes('phone') || 
+                       lowerStatus.includes('looking away') || 
+                       lowerStatus.includes('away from desk') || 
+                       lowerStatus.includes('multiple');
+
+  const stateLabel = sessionActive ? (isDistracted ? 'DISTRACTED' : 'FOCUSED') : 'STANDBY';
+  const stateColor = sessionActive ? (isDistracted ? 'var(--status-danger)' : 'var(--status-good)') : 'var(--text-dim)';
 
   return (
     <div className="timer-hero-container-v2 glass-effect">

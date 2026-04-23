@@ -82,21 +82,22 @@ const getSummary = (range) => {
 };
 
 const DISTRACTION_BREAKDOWN = [
-  { name: 'Phone', value: 45, color: 'var(--status-danger)' },
-  { name: 'Smartwatch', value: 25, color: '#f59e0b' },
-  { name: 'Earbuds', value: 15, color: 'var(--brand-secondary)' },
-  { name: 'Unclassified', value: 15, color: '#94a3b8' },
+  { name: 'Phone', value: 35, color: 'var(--status-danger)' },
+  { name: 'Looking Away', value: 25, color: 'var(--brand-secondary)' },
+  { name: 'Away from Desk', value: 20, color: 'var(--status-info)' },
+  { name: 'Yawning', value: 10, color: '#f59e0b' },
+  { name: 'Multiple People', value: 10, color: '#94a3b8' },
 ];
 
 const getTrendData = (range) => {
   return [
-    { day: 'Mon', phone: 12, earbuds: 4, watch: 2 },
-    { day: 'Tue', phone: 8, earbuds: 6, watch: 5 },
-    { day: 'Wed', phone: 15, earbuds: 2, watch: 1 },
-    { day: 'Thu', phone: 10, earbuds: 8, watch: 4 },
-    { day: 'Fri', phone: 4, earbuds: 12, watch: 3 },
-    { day: 'Sat', phone: 20, earbuds: 5, watch: 2 },
-    { day: 'Sun', phone: 12, earbuds: 3, watch: 1 },
+    { day: 'Mon', phone: 12, looking: 4, away: 2 },
+    { day: 'Tue', phone: 8, looking: 6, away: 5 },
+    { day: 'Wed', phone: 15, looking: 2, away: 1 },
+    { day: 'Thu', phone: 10, looking: 8, away: 4 },
+    { day: 'Fri', phone: 4, looking: 12, away: 3 },
+    { day: 'Sat', phone: 20, looking: 5, away: 2 },
+    { day: 'Sun', phone: 12, looking: 3, away: 1 },
   ];
 };
 
@@ -364,8 +365,8 @@ const Analytics = () => {
                   <Tooltip content={<CustomTooltip />} />
                   <Legend verticalAlign="top" align="right" height={36} iconType="circle" />
                   <Line type="monotone" dataKey="phone" name="Phone" stroke="var(--status-danger)" strokeWidth={3} dot={{ r: 4, fill: 'var(--status-danger)' }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="earbuds" name="Earbuds" stroke="var(--brand-secondary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--brand-secondary)' }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="watch" name="Smartwatch" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="looking" name="Looking Away" stroke="var(--brand-secondary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--brand-secondary)' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="away" name="Away from Desk" stroke="var(--status-info)" strokeWidth={3} dot={{ r: 4, fill: 'var(--status-info)' }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
