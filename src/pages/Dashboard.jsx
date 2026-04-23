@@ -64,12 +64,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     let interval;
-    if (sessionActive && (status === "Normal" || status === "Smartwatch")) {
+    if (sessionActive && (status.toLowerCase().includes('normal') || status.toLowerCase().includes('focus'))) {
       interval = setInterval(() => {
         setFocusTime(prev => prev + 1);
         setCurrentStreak(prev => prev + 1);
       }, 1000);
-    } else if (sessionActive && status !== "Idle" && status !== "Normal") {
+    } else if (sessionActive && status !== "Idle" && !status.toLowerCase().includes('normal') && !status.toLowerCase().includes('focus')) {
       setCurrentStreak(0);
     }
     return () => clearInterval(interval);

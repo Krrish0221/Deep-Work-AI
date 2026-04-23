@@ -4,6 +4,40 @@ const SettingsContext = createContext();
 
 export const useSettings = () => useContext(SettingsContext);
 
+// AI Engine Meta Configuration
+export const ENGINES = {
+  TM_V1: {
+    id: 'Fast Mode',
+    name: 'Fast Mode',
+    label: 'Teachable Machine v1',
+    classes: ['Focused', 'Phone Detected', 'Looking Away', 'Away from Desk'],
+    interval: 100,
+    requiresAPI: false,
+    icon: '⚡',
+    badgeColor: '#3b82f6'
+  },
+  TM_V2: {
+    id: 'Balanced Mode',
+    name: 'Balanced Mode',
+    label: 'Teachable Machine v2',
+    classes: ['Focused', 'Phone Detected', 'Looking Away', 'Away from Desk', 'Yawning', 'Multiple People', 'Slouching'],
+    interval: 100,
+    requiresAPI: false,
+    icon: '⚖️',
+    badgeColor: '#a78bfa'
+  },
+  ROBOFLOW: {
+    id: 'Precision Mode',
+    name: 'Precision Mode',
+    label: 'Roboflow AI',
+    classes: ['Focused', 'Phone', 'Looking Away', 'Away from Desk', 'Yawning', 'Earbuds', 'Headphones', 'Smartwatch', 'Eyes Closed'],
+    interval: 5000,
+    requiresAPI: true,
+    icon: '🎯',
+    badgeColor: '#10b981'
+  }
+};
+
 export const SettingsProvider = ({ children }) => {
   const [accentColor, setAccentColor] = useState('#6366f1');
   const [theme, setTheme] = useState('Dark');
@@ -12,9 +46,21 @@ export const SettingsProvider = ({ children }) => {
   );
 
   // AI Core State
-  const [aiProvider, setAiProvider] = useState('Fast Mode'); // 'Fast Mode' (Teachable Machine) | 'Precision Mode' (Roboflow)
+  const [aiProvider, setAiProvider] = useState('Balanced Mode'); // 'Fast Mode' | 'Balanced Mode' | 'Precision Mode'
   const [confidenceThreshold, setConfidenceThreshold] = useState(85);
-  const [teachableUrl, setTeachableUrl] = useState('https://teachablemachine.withgoogle.com/models/-YCasu5Jm/');
+  
+  // Model Instances (Global)
+  const [modelV1, setModelV1] = useState(null);
+  const [modelV2Image, setModelV2Image] = useState(null);
+  const [modelV2Posture, setModelV2Posture] = useState(null);
+  
+  // Model URLs
+  const [teachableUrl, setTeachableUrl] = useState('https://teachablemachine.withgoogle.com/models/-YCasu5Jm/'); // TM v1
+  const [tmV2Urls, setTmV2Urls] = useState({
+    image: 'https://teachablemachine.withgoogle.com/models/I5aX6pvIg/', // The Image project
+    posture: 'https://teachablemachine.withgoogle.com/models/d0Mt0RicD/' // The Pose project
+  });
+
   const [roboflowConfig, setRoboflowConfig] = useState({
     apiKey: 'rf_PYTMexEStZYGUWefzBTc0oLjqd32',
     model: 'deepworkai-v2.1',
@@ -78,8 +124,12 @@ export const SettingsProvider = ({ children }) => {
       aiProvider, setAiProvider,
       confidenceThreshold, setConfidenceThreshold,
       teachableUrl, setTeachableUrl,
+      tmV2Urls, setTmV2Urls,
       roboflowConfig, setRoboflowConfig,
-      apiUsage, setApiUsage
+      apiUsage, setApiUsage,
+      modelV1, setModelV1,
+      modelV2Image, setModelV2Image,
+      modelV2Posture, setModelV2Posture
     }}>
       {children}
     </SettingsContext.Provider>

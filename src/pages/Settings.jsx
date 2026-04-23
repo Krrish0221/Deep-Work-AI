@@ -25,7 +25,7 @@ import {
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings, ENGINES } from '../context/SettingsContext';
 import { useUser } from '../context/UserContext';
 import './Settings.css';
 
@@ -36,8 +36,12 @@ const Settings = () => {
     aiProvider, setAiProvider,
     confidenceThreshold, setConfidenceThreshold,
     teachableUrl, setTeachableUrl,
+    tmV2Urls, setTmV2Urls,
     roboflowConfig, setRoboflowConfig,
-    apiUsage
+    apiUsage,
+    modelV1,
+    modelV2Image,
+    modelV2Posture
   } = useSettings();
 
   const { userData, updateProfile } = useUser();
@@ -374,113 +378,202 @@ const Settings = () => {
           </div>
           <div className="section-content">
             <div className="setting-control">
-              <label>Detection Mode</label>
-              <div className="segmented-control mode-selector">
-                {[
-                  { id: 'Fast Mode', label: '⚡ Fast Mode', desc: 'Real-time, local' },
-                  { id: 'Precision Mode', label: '🎯 Precision Mode', desc: '8-class, API' }
-                ].map(p => (
-                  <button 
-                    key={p.id} 
-                    className={aiProvider === p.id ? 'active' : ''} 
-                    onClick={() => setAiProvider(p.id)}
+              <label className="mb-3 d-block">Detection Engine</label>
+              <div className="engine-card-grid">
+                {Object.values(ENGINES).map(engine => (
+                  <div 
+                    key={engine.id} 
+                    className={`engine-selector-card ${aiProvider === engine.id ? 'active' : ''}`}
+                    onClick={() => setAiProvider(engine.id)}
                   >
-                    {p.label}
-                  </button>
+                    <div className="engine-card-header">
+                      <span className="engine-icon">{engine.icon}</span>
+                      <div className="engine-meta">
+                        <span className="engine-name">{engine.name}</span>
+                        <span className="engine-label-small">{engine.label}</span>
+                      </div>
+                    </div>
+                    <div className="engine-card-body">
+                      <div className="engine-stat-row">
+                        <span className="stat-dot"></span>
+                        <span>{engine.classes.length} classes</span>
+                      </div>
+                      <div className="engine-stat-row">
+                        <span className="stat-dot"></span>
+                        <span>{engine.interval === 100 ? 'Real-time' : 'High accuracy'}</span>
+                      </div>
+                      <div className="engine-stat-row">
+                        <span className="stat-dot"></span>
+                        <span>{engine.requiresAPI ? 'Needs Internet' : 'Offline Engine'}</span>
+                      </div>
+                    </div>
+                    <div className="engine-card-footer">
+                      {aiProvider === engine.id ? (
+                        <span className="active-badge"><Check size={12} /> Active</span>
+                      ) : engine.requiresAPI ? (
+                        <span className="api-key-prompt">API Key Needed</span>
+                      ) : (
+                        <span className="select-text">Select Engine</span>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
 
             <div className="status-pill-row">
               <div className="status-indicator">
-                <div className={`dot ${aiProvider === 'Fast Mode' ? 'pulse-success' : 'pulse-info'}`}></div>
+                <div className={`dot ${aiProvider === 'Fast Mode' || aiProvider === 'Balanced Mode' ? 'pulse-success' : 'pulse-info'}`}></div>
                 <span className="status-text">
-                  {aiProvider === 'Fast Mode' ? 'Teachable Machine Engine — Ready' : 'Roboflow API — Connected'}
+                  {aiProvider === 'Fast Mode' ? 'Teachable Machine v1 — Ready' : 
+                   aiProvider === 'Balanced Mode' ? 'Teachable Machine v2 — Connected' : 
+                   'Roboflow API — Connected'}
                 </span>
               </div>
             </div>
 
-            {aiProvider === 'Fast Mode' ? (
-              <div className="mode-details-v4 fade-in">
-                <div className="mode-desc-box">
-                  <p className="explainer mb-4">Currently using <b>Browser-Based Inference</b> optimized for zero-latency monitoring.</p>
-                  
-                  <div className="classes-section">
-                    <span className="stat-label-tiny mb-2 d-block">DETECTED CLASSES</span>
+            <div className="engine-details-container">
+              {aiProvider === 'Fast Mode' || aiProvider === 'Balanced Mode' ? (
+                <div className="mode-details-v4 fade-in">
+                  <div className="mode-desc-box">
+                    <p className="explainer mb-4">
+                      Currently using <b>{aiProvider === 'Fast Mode' ? 'TM v1' : 'TM v2'} Browser-Based Inference</b> optimized for {aiProvider === 'Fast Mode' ? 'zero-latency' : 'expanded detection'}.
+                    </p>
+                    
+                  <div className="model-diagnostics-v2 mt-4">
+                    <span className="stat-label-tiny mb-2 d-block">vision stream verification</span>
+                    <div className="diagnostic-grid">
+                      <div className="diagnostic-item">
+                        <div className="diag-header">
+                          <span className="diag-name">IMAGE MODEL (V2)</span>
+                          <span className={`diag-status ${modelV2Image ? 'active' : 'dead'}`}>
+                            {modelV2Image ? 'CONNECTED' : 'WAITING'}
+                          </span>
+                        </div>
+                        <div className="diag-url-snippet">{tmV2Urls.image}</div>
+                        <div className="diag-classes-count">
+                          {modelV2Image ? `${modelV2Image.getClassLabels?.()?.length || '?'} classes detected` : 'Scanning...'}
+                        </div>
+                      </div>
+                      <div className="diagnostic-item">
+                        <div className="diag-header">
+                          <span className="diag-name">POSTURE MODEL (V2)</span>
+                          <span className={`diag-status ${modelV2Posture ? 'active' : 'dead'}`}>
+                            {modelV2Posture ? 'CONNECTED' : 'WAITING'}
+                          </span>
+                        </div>
+                        <div className="diag-url-snippet">{tmV2Urls.posture}</div>
+                        <div className="diag-classes-count">
+                          {modelV2Posture ? `${modelV2Posture.getClassLabels?.()?.length || '?'} classes detected` : 'Scanning...'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="classes-section mt-4">
+                    <span className="stat-label-tiny mb-2 d-block">ACTIVE DETECTION PIXELS</span>
                     <div className="classes-badge-group">
-                      {['Normal', 'Phone', 'Earbuds', 'Smartwatch'].map(cls => (
+                      {ENGINES[aiProvider === 'Fast Mode' ? 'TM_V1' : 'TM_V2'].classes.map(cls => (
                         <span key={cls} className="mode-badge">{cls}</span>
                       ))}
                     </div>
                   </div>
                 </div>
-                
-                <button className="btn-full-action mt-4">
-                  <RotateCcw size={14} /> 
-                  <span>Re-upload Model Artifacts</span>
-                </button>
               </div>
             ) : (
-              <div className="mode-details-v4 fade-in">
-                <div className="precision-stats-grid">
-                  <div className="stat-card-v2">
-                    <span className="stat-label-tiny">CLASSES DETECTED</span>
-                    <span className="stat-value-large">8</span>
-                  </div>
-                  <div className="stat-card-v2">
-                    <span className="stat-label-tiny">API USAGE</span>
-                    <div className="usage-value-row">
-                      <span className="stat-value-large">{apiUsage.used}</span>
-                      <span className="stat-value-muted">/ {apiUsage.total}</span>
+                <div className="mode-details-v4 fade-in">
+                  <div className="precision-stats-grid">
+                    <div className="stat-card-v2">
+                      <span className="stat-label-tiny">CLASSES DETECTED</span>
+                      <span className="stat-value-large">8+</span>
                     </div>
-                    <span className="reset-timer-tag">Resets in {apiUsage.resetsIn} days</span>
-                  </div>
-                </div>
-
-                <div className="usage-progress-v2 mt-4">
-                  <div className="usage-bar-bg">
-                    <div className="usage-bar-fill" style={{ width: `${(apiUsage.used / apiUsage.total) * 100}%` }}></div>
-                  </div>
-                </div>
-                
-                <div className="deploy-custom-section mt-4">
-                  {isModelLive ? (
-                    <div className="model-live-status fade-in">
-                      <div className="dot pulse-success"></div>
-                      <span className="status-text-v2">Your custom model will be live in a few moments...</span>
-                    </div>
-                  ) : !showDeployOwn ? (
-                    <button className="btn-secondary ghost-btn btn-xs" onClick={() => setShowDeployOwn(true)}>
-                      Want to deploy your own model?
-                    </button>
-                  ) : (
-                    <div className="custom-model-form fade-in">
-                      <div className="input-group">
-                        <label className="stat-label-tiny">ROBOFLOW API KEY</label>
-                        <div className="input-wrapper-v2">
-                          <input 
-                            type="password" 
-                            value={localRoboflow.apiKey} 
-                            onChange={(e) => setLocalRoboflow({...localRoboflow, apiKey: e.target.value})} 
-                            placeholder="••••••••••••••••" 
-                          />
-                          <button className="btn-save-key" onClick={() => {
-                            setRoboflowConfig(localRoboflow);
-                            setIsModelLive(true);
-                            setShowDeployOwn(false);
-                          }}>
-                            Update
-                          </button>
-                        </div>
+                    <div className="stat-card-v2">
+                      <span className="stat-label-tiny">API USAGE</span>
+                      <div className="usage-value-row">
+                        <span className="stat-value-large">{apiUsage.used}</span>
+                        <span className="stat-value-muted">/ {apiUsage.total}</span>
                       </div>
-                      <button className="btn-cancel-deploy mt-2" onClick={() => setShowDeployOwn(false)}>Cancel</button>
+                      <span className="reset-timer-tag">Resets in {apiUsage.resetsIn} days</span>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="usage-progress-v2 mt-4">
+                    <div className="usage-bar-bg">
+                      <div className="usage-bar-fill" style={{ width: `${(apiUsage.used / apiUsage.total) * 100}%` }}></div>
+                    </div>
+                  </div>
+                  
+                  <div className="deploy-custom-section mt-4">
+                    {isModelLive ? (
+                      <div className="model-live-status fade-in">
+                        <div className="dot pulse-success"></div>
+                        <span className="status-text-v2">Your custom model will be live in a few moments...</span>
+                      </div>
+                    ) : !showDeployOwn ? (
+                      <button className="btn-secondary ghost-btn btn-xs" onClick={() => setShowDeployOwn(true)}>
+                        Want to deploy your own model?
+                      </button>
+                    ) : (
+                      <div className="custom-model-form fade-in">
+                        <div className="input-group">
+                          <label className="stat-label-tiny">ROBOFLOW API KEY</label>
+                          <div className="input-wrapper-v2">
+                            <input 
+                              type="password" 
+                              value={localRoboflow.apiKey} 
+                              onChange={(e) => setLocalRoboflow({...localRoboflow, apiKey: e.target.value})} 
+                              placeholder="••••••••••••••••" 
+                            />
+                            <button className="btn-save-key" onClick={() => {
+                              setRoboflowConfig(localRoboflow);
+                              setIsModelLive(true);
+                              setShowDeployOwn(false);
+                            }}>
+                              Update
+                            </button>
+                          </div>
+                        </div>
+                        <button className="btn-cancel-deploy mt-2" onClick={() => setShowDeployOwn(false)}>Cancel</button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="explainer mt-4">Model: <b>DeepWork AI v1</b> · <span className="text-success">76% mAP</span></p>
                 </div>
-                
-                <p className="explainer mt-4">Model: <b>DeepWork AI v1</b> · <span className="text-success">76% mAP</span></p>
+              )}
+            </div>
+
+            {/* Comparison Table */}
+            <div className="comparison-table-wrapper mt-5">
+              <h4 className="table-title mb-3">Engine Comparison</h4>
+              <div className="comparison-table glass-effect">
+                <div className="table-row table-header">
+                  <div className="cell cell-feature">DETECTION CLASS</div>
+                  <div className="cell cell-v1">v1 Fast</div>
+                  <div className="cell cell-v2 highlight">v2 Balanced</div>
+                  <div className="cell cell-precision">Precision</div>
+                </div>
+                {[
+                  { label: 'Focused', v1: true, v2: true, prec: true },
+                  { label: 'Phone Detected', v1: true, v2: true, prec: true },
+                  { label: 'Looking Away', v1: true, v2: true, prec: true },
+                  { label: 'Away from Desk', v1: true, v2: true, prec: true },
+                  { label: 'Yawning', v1: false, v2: true, prec: true },
+                  { label: 'Multiple People', v1: false, v2: true, prec: true },
+                  { label: 'Slouching', v1: false, v2: true, prec: true },
+                  { label: 'Earbuds / Headphones', v1: false, v2: false, prec: true },
+                  { label: 'Smartwatch', v1: false, v2: false, prec: true },
+                  { label: 'Eyes Closed', v1: false, v2: false, prec: true },
+                ].map((row, i) => (
+                  <div key={i} className="table-row">
+                    <div className="cell cell-feature">{row.label}</div>
+                    <div className="cell cell-v1">{row.v1 ? <Check size={14} className="text-success" /> : <X size={14} className="text-dim" />}</div>
+                    <div className="cell cell-v2 highlight">{row.v2 ? <Check size={14} className="text-purple" /> : <X size={14} className="text-dim" />}</div>
+                    <div className="cell cell-precision">{row.prec ? <Check size={14} className="text-emerald" /> : <X size={14} className="text-dim" />}</div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
             
             <div className="setting-control mt-4">
               <div className="control-header">

@@ -1,23 +1,25 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import * as tmImage from '@teachablemachine/image';
-import { Shield, Loader2, Camera, VideoOff } from 'lucide-react';
-import { useSettings } from '../context/SettingsContext';
+const tmImage = window.tmImage;
+const tmPose = window.tmPose;
+const tf = window.tf;
+window.tf = tf; // Fix for TM Pose in Vite
+import { Shield, Loader2, Camera, VideoOff, RotateCcw } from 'lucide-react';
+import { useSettings, ENGINES } from '../context/SettingsContext';
 import './WebcamDetector.css';
-
-// Teachable Machine default if none provided
-const DEFAULT_TM_URL = "https://teachablemachine.withgoogle.com/models/-YCasu5Jm/";
 
 const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, active, setActive }) => {
   const videoRef = useRef(null);
   const { 
-    aiProvider, 
-    teachableUrl, 
-    roboflowConfig, 
-    confidenceThreshold 
+    aiProvider, setAiProvider,
+    teachableUrl, setTeachableUrl,
+    tmV2Urls, setTmV2Urls,
+    roboflowConfig, setRoboflowConfig,
+    confidenceThreshold, setConfidenceThreshold,
+    modelV1, setModelV1,
+    modelV2Image, setModelV2Image,
+    modelV2Posture, setModelV2Posture
   } = useSettings();
-
-  const [model, setModel] = useState(null);
-  const [roboflowModel, setRoboflowModel] = useState(null);
+  
   const [loading, setLoading] = useState(true);
   const [predictions, setPredictions] = useState([]);
   const [currentStatus, setCurrentStatus] = useState("Idle");
@@ -26,43 +28,52 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
   const requestRef = useRef();
   const countdownInterval = useRef();
 
-  // Load Teachable Machine
+  // Unified Engine Config from Context
+  const engine = useMemo(() => {
+    return Object.values(ENGINES).find(e => e.id === aiProvider) || ENGINES.TM_V1;
+  }, [aiProvider]);
+
+  // Load Models based on current provider
   useEffect(() => {
-    if (aiProvider !== 'Teachable Machine') return;
-    
-    const loadTM = async () => {
+    const loadModels = async () => {
       setLoading(true);
       try {
-        const baseUrl = teachableUrl || DEFAULT_TM_URL;
-        const modelURL = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + "model.json";
-        const metadataURL = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + "metadata.json";
-        const loadedModel = await tmImage.load(modelURL, metadataURL);
-        setModel(loadedModel);
+        if (aiProvider === 'Fast Mode') {
+          if (!modelV1) {
+            const baseUrl = teachableUrl;
+            const mURL = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + "model.json";
+            const metaURL = baseUrl + (baseUrl.endsWith('/') ? '' : '/') + "metadata.json";
+            const loaded = await tmImage.load(mURL, metaURL);
+            setModelV1(loaded);
+          }
+        } else if (aiProvider === 'Balanced Mode') {
+          // Load independently so one failure doesn't block the other
+          if (!modelV2Image) {
+            try {
+              const loaded = await tmImage.load(tmV2Urls.image + "model.json", tmV2Urls.image + "metadata.json");
+              setModelV2Image(loaded);
+            } catch (e) { console.error("V2 Image load fail", e); }
+          }
+          if (!modelV2Posture) {
+            try {
+              const loaded = await window.tmPose.load(tmV2Urls.posture + "model.json", tmV2Urls.posture + "metadata.json");
+              setModelV2Posture(loaded);
+            } catch (e) { console.error("V2 Posture load fail", e); }
+          }
+        }
         setLoading(false);
-      } catch (err) { 
-        console.error("TM Model load failed", err);
-        setLoading(false); 
+      } catch (err) {
+        console.error("Model system load error", err);
+        setLoading(false);
       }
     };
-    loadTM();
-  }, [aiProvider, teachableUrl]);
-
-  // Roboflow Integration Logic (Placeholder for library load)
-  useEffect(() => {
-    if (aiProvider !== 'Roboflow') return;
-    
-    // For Roboflow, we often use their Hosted API or a specialized JS library
-    const loadRoboflow = async () => {
-      setLoading(true);
-      await new Promise(r => setTimeout(r, 800));
-      setLoading(false);
-    };
-    loadRoboflow();
-  }, [aiProvider, roboflowConfig]);
+    loadModels();
+  }, [aiProvider, teachableUrl, tmV2Urls]);
 
   // Handle Countdown for Precision Mode
   useEffect(() => {
     if (aiProvider === 'Precision Mode' && active) {
+      setCountdown(5);
       countdownInterval.current = setInterval(() => {
         setCountdown(prev => (prev > 0 ? prev - 1 : 0));
       }, 1000);
@@ -84,68 +95,125 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
   };
 
   const predict = useCallback(async () => {
-    if (aiProvider === 'Teachable Machine' && model && videoRef.current) {
-      const prediction = await model.predict(videoRef.current);
-      setPredictions(prediction);
-      
-      const top = prediction.reduce((p, c) => (p.probability > c.probability) ? p : c);
-      setCurrentStatus(top.className);
-      onStatusChange(top.className, top.probability);
-      
-      if (top.className.toLowerCase().match(/phone|mobile|distracted/) && top.probability > (confidenceThreshold / 100)) {
+    if (!active || loading || !videoRef.current || videoRef.current.readyState < 2) {
+      if (active) requestRef.current = requestAnimationFrame(predict);
+      return;
+    }
+
+    let finalPredictions = [];
+    let topClass = "Normal";
+
+    try {
+      if (aiProvider === 'Fast Mode' && modelV1) {
+        finalPredictions = await modelV1.predict(videoRef.current);
+      } 
+      else if (aiProvider === 'Balanced Mode') {
+        // Run both in parallel for true simultaneous detection
+        const results = await Promise.allSettled([
+          modelV2Image ? modelV2Image.predict(videoRef.current) : Promise.resolve([]),
+          modelV2Posture ? (async () => {
+            let posenetData;
+            try {
+              // TM Pose often crashes with raw <video>. We draw to a canvas first.
+              const poseCanvas = document.createElement('canvas');
+              poseCanvas.width = videoRef.current.videoWidth;
+              poseCanvas.height = videoRef.current.videoHeight;
+              const ctx = poseCanvas.getContext('2d');
+              ctx.drawImage(videoRef.current, 0, 0);
+
+              const { pose, posenetOutput } = await modelV2Posture.estimatePose(poseCanvas, false);
+              posenetData = posenetOutput;
+            } catch (err) {
+              console.error("estimatePose error:", err);
+              return [{ className: `ERR(EST): ${err.message}`, probability: 1 }];
+            }
+            
+            if (!posenetData) return [];
+            
+            try {
+              return await modelV2Posture.predict(posenetData);
+            } catch (err) {
+              console.error("predict error:", err);
+              return [{ className: `ERR(PRED): ${err.message}`, probability: 1 }];
+            }
+          })() : Promise.resolve([])
+        ]);
+
+        
+        const combined = results
+          .filter(r => r.status === 'fulfilled')
+          .map(r => r.value)
+          .flat();
+        
+        if (combined.length > 0) {
+          const unique = {};
+          // Prefix ALL classes to be 100% sure they don't collide and we see everything
+          const imgResults = (results[0].status === 'fulfilled' && Array.isArray(results[0].value)) ? results[0].value : [];
+          imgResults.forEach(p => { 
+            const name = `[IMG] ${p.className}`;
+            unique[name] = { ...p, className: name };
+          });
+
+          const posResults = (results[1].status === 'fulfilled' && Array.isArray(results[1].value)) ? results[1].value : [];
+          posResults.forEach(p => {
+            const name = `[POS] ${p.className}`;
+            unique[name] = { ...p, className: name };
+          });
+
+          finalPredictions = Object.values(unique)
+            .filter(p => p.className.toLowerCase() !== '[img] focus')
+            .sort((a, b) => b.probability - a.probability);
+        }
+      } 
+      else if (aiProvider === 'Precision Mode') {
+        if (countdown <= 0) {
+          const image = captureFrame();
+          if (image) {
+            const response = await fetch(`https://detect.roboflow.com/${roboflowConfig.model}/${roboflowConfig.version}?api_key=${roboflowConfig.apiKey}`, {
+              method: 'POST',
+              body: image
+            });
+            const data = await response.json();
+            if (data.predictions) {
+              finalPredictions = data.predictions.map(p => ({
+                className: p.class,
+                probability: p.confidence,
+                bbox: { x: p.x, y: p.y, width: p.width, height: p.height }
+              }));
+            }
+            setCountdown(5);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Prediction loop error:", err);
+    }
+
+    if (finalPredictions.length > 0) {
+      setPredictions(finalPredictions);
+      const top = finalPredictions.reduce((p, c) => (p.probability > c.probability) ? p : c);
+      topClass = top.className;
+      setCurrentStatus(topClass);
+      onStatusChange(topClass, top.probability);
+
+      const isDistraction = topClass.toLowerCase().match(/phone|looking|away|yawning|multiple|slouching|earbuds|headphones|smartwatch|eyes/);
+      if (isDistraction && top.probability > (confidenceThreshold / 100)) {
         onDistractionDetected();
       }
-    } else if (aiProvider === 'Roboflow' && videoRef.current) {
-      const image = captureFrame();
-      if (!image) return;
-
-      try {
-        // We'll perform inference every ~1 second for Roboflow to avoid API rate limits
-        // but still maintain focus tracking
-        const response = await fetch(`https://detect.roboflow.com/${roboflowConfig.model}/${roboflowConfig.version}?api_key=${roboflowConfig.apiKey}`, {
-          method: 'POST',
-          body: image
-        });
-        const data = await response.json();
-        
-        if (data.predictions && data.predictions.length > 0) {
-          const formattedPredictions = data.predictions.map(p => ({
-            className: p.class,
-            probability: p.confidence,
-            bbox: { x: p.x, y: p.y, width: p.width, height: p.height }
-          }));
-          setPredictions(formattedPredictions);
-          
-          const top = formattedPredictions.reduce((p, c) => (p.probability > c.probability) ? p : c);
-          setCurrentStatus(top.className);
-          onStatusChange(top.className, top.probability);
-          
-          if (top.className.toLowerCase().match(/phone|mobile|distracted/) && top.probability > (confidenceThreshold / 100)) {
-            onDistractionDetected();
-          }
-        } else {
-          setCurrentStatus("Normal");
-          onStatusChange("Normal", 0.99);
-          setPredictions([]);
-        }
-      } catch (err) {
-        console.error("Roboflow Inference Error", err);
-      }
-      setCountdown(5);
     }
-    
-    // Control frame rate
-    const delay = aiProvider === 'Precision Mode' ? 5000 : 100;
+
+
+    const delay = aiProvider === 'Precision Mode' ? 1000 : 100;
     setTimeout(() => {
       requestRef.current = requestAnimationFrame(predict);
     }, delay);
-  }, [model, active, aiProvider, loading, confidenceThreshold, roboflowConfig, onStatusChange, onDistractionDetected]);
+  }, [active, loading, aiProvider, modelV1, modelV2Image, modelV2Posture, roboflowConfig, confidenceThreshold, countdown]);
 
   useEffect(() => {
-    if (active) requestRef.current = requestAnimationFrame(predict);
+    if (active && !loading) requestRef.current = requestAnimationFrame(predict);
     else cancelAnimationFrame(requestRef.current);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [active, predict]);
+  }, [active, loading, predict]);
 
   useEffect(() => {
     if (active && videoRef.current && !videoRef.current.srcObject) {
@@ -166,7 +234,8 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
   const getStatusColor = (className, prob) => {
     if (!active) return 'var(--text-dim)';
     const name = className.toLowerCase();
-    if (name.includes('phone') || name.includes('distracted')) return 'var(--status-danger)';
+    const isBad = name.match(/phone|looking|away|yawning|multiple|slouching|earbuds|headphones|smartwatch|eyes/);
+    if (isBad) return 'var(--status-danger)';
     if (name.includes('normal') || name.includes('focus')) return 'var(--status-good)';
     return 'var(--status-info)';
   };
@@ -178,40 +247,33 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
 
   return (
     <div className={`detector-card-v3 ${active ? 'active-guard' : ''}`} style={{ borderColor: active ? statusColor : 'var(--border-glass)' }}>
-      <div className="card-top-label">
+      <div className="card-top-label" style={{ background: active ? statusColor : '' }}>
         <Shield size={14} />
-        <span>VISION GUARD</span>
+        <span>{engine.name.toUpperCase()} VISION</span>
       </div>
 
       <div className="video-viewport-v3">
         {loading && (
           <div className="loader-overlay">
             <Loader2 className="spin" size={32} />
-            <p>AI Core Initializing...</p>
+            <p>{engine.label} Loading...</p>
           </div>
         )}
         
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          muted 
-          playsInline 
-          className={active ? 'visible' : 'hidden'} 
-        />
+        <video ref={videoRef} autoPlay muted playsInline className={active ? 'visible' : 'hidden'} />
 
         {!active && !loading && (
           <div className="camera-placeholder-v3">
             <VideoOff size={44} strokeWidth={1.5} />
-            <p className="placeholder-text">Vision Guard Standby</p>
+            <p className="placeholder-text">{engine.name} Standby</p>
           </div>
         )}
 
-        {/* OVERLAYS */}
         {active && (
           <div className="cam-overlays">
-            <div className="overlay-badge top-right scale-down">
+            <div className="overlay-badge top-right scale-down" style={{ background: engine.badgeColor }}>
               <div className="dot pulse-success"></div>
-              <span>{aiProvider === 'Fast Mode' ? 'LIVE' : 'PRECISION'}</span>
+              <span>{engine.interval === 100 ? 'REAL-TIME' : 'API SCAN'}</span>
             </div>
 
             {aiProvider === 'Precision Mode' && countdown > 0 && (
@@ -222,10 +284,9 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
             )}
             
             <div className="overlay-badge bottom-left status-pill-v3" style={{ background: statusColor }}>
-              {currentStatus.includes('Phone') ? '📱' : '✅'} {currentStatus}
+              {currentStatus.match(/Phone|Looking|Away|Slouching/) ? '⚠️' : '✅'} {currentStatus}
             </div>
 
-            {/* Bounding Boxes for Roboflow */}
             {aiProvider === 'Precision Mode' && predictions.map((p, i) => p.bbox && (
               <div 
                 key={i}
@@ -245,40 +306,51 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
             ))}
 
             <div className="corner-brackets-v3">
-              <div className="bracket tl"></div>
-              <div className="bracket tr"></div>
-              <div className="bracket bl"></div>
-              <div className="bracket br"></div>
+              <div className="bracket tl"></div><div className="bracket tr"></div>
+              <div className="bracket bl"></div><div className="bracket br"></div>
             </div>
           </div>
         )}
       </div>
 
-      {/* ANALYSIS FOOTER */}
       <div className="analysis-footer-v3">
-        <div className="footer-label">
-          {aiProvider === 'Fast Mode' ? 'Real-time Inference' : 'Deep Precision Analysis (8-Class)'}
+        <div className="footer-label-row">
+          <div className="footer-label">
+            {engine.label} — {engine.classes.length} Point Analysis
+          </div>
+          <div className="engine-active-status">
+            {aiProvider === 'Balanced Mode' && (
+              <>
+                <span className={`status-tag ${modelV2Image ? 'tag-live' : 'tag-dead'}`}>IMG</span>
+                <span className={`status-tag ${modelV2Posture ? 'tag-live' : 'tag-dead'}`}>POS</span>
+              </>
+            )}
+            {aiProvider === 'Fast Mode' && <span className="status-tag tag-live">V1</span>}
+          </div>
         </div>
         <div className="docked-bars-row">
-          {predictions.length > 0 ? predictions.map(p => (
+          {predictions.length > 0 ? predictions.slice(0, 8).map(p => (
             <div key={p.className} className="docked-bar-item-v3">
               <div className="bar-label-v3">
-                <span className="label-text">{p.className.replace('/', ' / ')}</span>
-                <span className="label-val">— {Math.round(p.probability * 100)}%</span>
+                <span className="label-text">{p.className}</span>
+                <span className="label-val">{Math.round(p.probability * 100)}%</span>
               </div>
               <div className="bar-progress-v3">
                 <div 
-                  className={`bar-fill-v3 ${p.className.toLowerCase().match(/phone|distracted|earbuds/) && p.probability > 0.8 ? 'pulse-alert' : ''}`}
-                  style={{ 
-                    width: `${p.probability * 100}%`, 
-                    background: getStatusColor(p.className, p.probability) 
-                  }}
+                  className="bar-fill-v3"
+                  style={{ width: `${p.probability * 100}%`, background: getStatusColor(p.className, p.probability) }}
                 ></div>
               </div>
             </div>
           )) : (
             <div className="bars-waiting">
-              {aiProvider === 'Fast Mode' ? 'Awaiting Inference Data...' : 'Initializing Deep Scan...'}
+              {aiProvider === 'Balanced Mode' ? (
+                <>
+                  {!modelV2Image && !modelV2Posture ? "Initializing Dual Engines..." : 
+                   !modelV2Image ? "Image Model Loading..." : 
+                   !modelV2Posture ? "Posture Model Loading..." : "Awaiting Inference..."}
+                </>
+              ) : "Awaiting engine telemetry..."}
             </div>
           )}
         </div>
