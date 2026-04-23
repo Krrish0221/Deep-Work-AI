@@ -9,11 +9,7 @@ export const UserProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate Firebase onAuthStateChanged
-    const storedUser = localStorage.getItem('dwg_user');
-    if (storedUser) {
-      setUserData(JSON.parse(storedUser));
-    }
+    // Session always starts as null to force login on every refresh/start
     setIsLoading(false);
   }, []);
 

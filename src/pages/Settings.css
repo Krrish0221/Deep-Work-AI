@@ -1189,10 +1189,11 @@ to {
 }
 
 .engine-selector-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  padding: 20px;
+  padding: 1.5rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -1202,10 +1203,10 @@ to {
 }
 
 .engine-selector-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-glass);
+  border-color: var(--brand-primary);
   transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--card-shadow);
 }
 
 .engine-selector-card.active {
@@ -1224,7 +1225,7 @@ to {
   font-size: 24px;
   width: 44px;
   height: 44px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--brand-primary-glow);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -1239,7 +1240,7 @@ to {
 .engine-name {
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .engine-label-small {
@@ -1258,7 +1259,7 @@ to {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 .stat-dot {
@@ -1300,27 +1301,36 @@ to {
 /* Comparison Table Styles */
 .comparison-table-wrapper {
   animation: slideUp 0.5s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .table-title {
   font-size: 14px;
   font-weight: 800;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
 .comparison-table {
-  width: 100%;
+  width: 95%;
+  max-width: 900px;
+  margin-inline: auto !important;
   border-radius: 16px;
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-light);
+  display: block;
 }
 
 .table-row {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s;
   min-width: 500px;
 }
@@ -1337,7 +1347,7 @@ to {
   background: rgba(255, 255, 255, 0.05);
   font-size: 11px;
   font-weight: 800;
-  color: var(--text-dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1353,7 +1363,7 @@ to {
   justify-content: flex-start;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 .cell-v2.highlight {
@@ -1379,4 +1389,15 @@ to { opacity: 1; transform: translateY(0); }
 .diag-name { font-size: 0.6rem; font-weight: 800; color: var(--text-dim); }
 .diag-status { font-size: 0.5rem; font-weight: 900; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px; }
 .diag-url-snippet { font-size: 0.55rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.5; font-family: monospace; }
-.diag-classes-count { font-size: 0.65rem; font-weight: 700; color: #fff; }
+.diag-classes-count { font-size: 0.65rem; font-weight: 700; color: var(--text-primary); }
+
+.tm-v2-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.explainer {
+  text-align: center;
+}

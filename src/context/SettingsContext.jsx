@@ -20,7 +20,7 @@ export const ENGINES = {
     id: 'Balanced Mode',
     name: 'Balanced Mode',
     label: 'Teachable Machine v2',
-    classes: ['Focused', 'Phone Detected', 'Looking Away', 'Away from Desk', 'Yawning', 'Multiple People', 'Slouching'],
+    classes: ['Focused', 'Phone Detected', 'Looking Away', 'Away from Desk', 'Yawning', 'Multiple People'],
     interval: 100,
     requiresAPI: false,
     icon: '⚖️',

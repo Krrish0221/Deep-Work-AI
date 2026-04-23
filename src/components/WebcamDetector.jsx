@@ -161,7 +161,10 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
           });
 
           finalPredictions = Object.values(unique)
-            .filter(p => p.className.toLowerCase() !== '[img] focus')
+            .filter(p => {
+              const name = p.className.toLowerCase();
+              return name !== '[img] focus' && name !== '[img] headphone';
+            })
             .sort((a, b) => b.probability - a.probability);
         }
       } 
@@ -316,7 +319,7 @@ const WebcamDetector = ({ onStatusChange, onDistractionDetected, sessionActive, 
       <div className="analysis-footer-v3">
         <div className="footer-label-row">
           <div className="footer-label">
-            {engine.label} — {engine.classes.length} Point Analysis
+            {engine.label} — 6 Point Analysis
           </div>
           <div className="engine-active-status">
             {aiProvider === 'Balanced Mode' && (

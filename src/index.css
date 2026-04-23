@@ -22,9 +22,9 @@
   --bg-page: #f4f5ff;
   --bg-card: #ffffff;
   --bg-glass: rgba(255, 255, 255, 0.8);
-  --text-primary: #0d0f1a;
-  --text-muted: rgba(0, 0, 0, 0.5);
-  --text-dim: rgba(0, 0, 0, 0.35);
+  --text-primary: #000000;
+  --text-muted: #1a1a1a;
+  --text-dim: #333333;
   --border: rgba(0, 0, 0, 0.08);
   --border-light: rgba(0, 0, 0, 0.12);
   --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
@@ -84,10 +84,11 @@ body {
 .badge {
   padding: 0.25rem 0.75rem;
   border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -95,7 +96,7 @@ body {
 
 .badge-primary { background: var(--brand-primary-glow); color: var(--brand-primary); border: 1px solid var(--border); }
 .badge-success { background: rgba(16, 185, 129, 0.1); color: var(--status-good); border: 1px solid var(--border); }
-.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--status-danger); border: 1px solid var(--border); }
+.model-diagnostics-v2 { background: var(--input-bg); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border-light); margin-top: 1.5rem; margin-bottom: 1.5rem; }
 
 .fade-in { animation: fadeIn 0.5s ease-out; }
 @keyframes fadeIn {
@@ -112,6 +113,8 @@ body {
 .text-primary { color: var(--text-primary) !important; }
 .text-muted { color: var(--text-muted) !important; }
 .text-dim { color: var(--text-dim) !important; }
+
+.diag-url-snippet { font-size: 0.55rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; }
 
 .card-top-label {
   display: flex;

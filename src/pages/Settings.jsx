@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useSettings, ENGINES } from '../context/SettingsContext';
 import { useUser } from '../context/UserContext';
+import { useNavigate } from 'react-router-dom';
 import './Settings.css';
 
 const Settings = () => {
@@ -44,7 +45,8 @@ const Settings = () => {
     modelV2Posture
   } = useSettings();
 
-  const { userData, updateProfile } = useUser();
+  const navigate = useNavigate();
+  const { userData, updateProfile, logout } = useUser();
   
   const fileInputRef = useRef(null);
   
@@ -485,7 +487,7 @@ const Settings = () => {
                   <div className="precision-stats-grid">
                     <div className="stat-card-v2">
                       <span className="stat-label-tiny">CLASSES DETECTED</span>
-                      <span className="stat-value-large">8+</span>
+                      <span className="stat-value-large">6+</span>
                     </div>
                     <div className="stat-card-v2">
                       <span className="stat-label-tiny">API USAGE</span>
@@ -761,7 +763,25 @@ const Settings = () => {
               
               <div className="danger-modal-actions">
                 <button className="btn-cancel-modal" onClick={() => setShowConfirm(null)}>Cancel</button>
-                <button className="btn-danger-confirm" onClick={() => { alert('Action Confirmed'); setShowConfirm(null); }}>
+                <button 
+                  className="btn-danger-confirm" 
+                  onClick={async () => { 
+                    if (showConfirm === 'clear') {
+                      // Reset History: Clear all local storage except the user and theme
+                      const user = localStorage.getItem('dwg_user');
+                      const sidebar = localStorage.getItem('sidebar_collapsed');
+                      localStorage.clear();
+                      if (user) localStorage.setItem('dwg_user', user);
+                      if (sidebar) localStorage.setItem('sidebar_collapsed', sidebar);
+                      alert('Local history and analytics have been reset.');
+                    } else if (showConfirm === 'delete') {
+                      // Delete Account: Logout and redirect
+                      await logout();
+                      navigate('/login');
+                    }
+                    setShowConfirm(null); 
+                  }}
+                >
                   {showConfirm === 'clear' ? 'Yes, Reset History' : 'Confirm Destruction'}
                 </button>
               </div>

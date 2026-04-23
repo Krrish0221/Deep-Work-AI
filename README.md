@@ -1,26 +1,25 @@
 # 🛡️ DeepWork AI | Study & Focus Monitor
 
-A high-performance, real-time AI vision application designed to eliminate workspace distractions and enforce deep focus. 
+A high-performance, real-time AI vision application designed to eliminate workspace distractions and enforce deep focus. Now upgraded to a **6-Point Detection System** with a dual-model vision engine.
 
 > [!IMPORTANT]
-> This project leverages **Teachable Machine** and **TensorFlow.js** for browser-side, low-latency object detection. It is built with a premium **React** dashboard and an **Express** analytics backend.
+> This project leverages **Teachable Machine v2 (Image & Pose)** and **TensorFlow.js** for browser-side, low-latency object detection. It is built with a premium **React** dashboard and a secure, login-first architecture.
 
 ---
 
 ## ✨ Features
 
-- **🎯 AI surveillance**: Real-time monitoring of your workspace via webcam.
-- **📱 Distraction Detection**: Automatically detects phones or specific "distracted" poses using a custom AI model.
-- **📊 Interactive Dashboard**: A glassmorphic, theme-aware UI featuring:
-  - **Focus Timer**: Tracks your deep work duration.
-  - **Distraction Counter**: Tallies every time focus is broken.
-  - **Real-time Chart**: Live AI confidence timeline using Recharts.
-- **🌓 Unified Theme Engine**: Seamlessly switch between **Dark Mode**, **Light Mode (Frosted Ice)**, or **System Sync** using a root-level token system.
-- **🔐 Identity & Security**: 
-  - **Avatar Management**: Dual-mode identity system (Initials vs. Custom Uploads) with premium presets.
-  - **Email Verification**: Secure 4-digit OTP verification system with success animations.
-- **🕒 Session History**: Persistent logging of your focus sessions for long-term productivity analysis.
-- **🎨 Premium Aesthetics**: Modern design system with glassmorphism, smooth micro-interactions, and transition-aware UI.
+- **🎯 Triple-Engine Vision Strategy**: Choose your performance level:
+  - **Fast Mode (TM v1)**: Zero-latency, browser-native 4-class detection.
+  - **Balanced Mode (TM v2)**: Dual-model (Image + Pose) 6-point analysis for maximum stability.
+  - **Precision Mode (Roboflow AI)**: Cloud-based high-fidelity inference for complex workspace environments.
+- **🤖 6-Point Vision Analysis**: Sophisticated monitoring detecting Focused, Phone usage, Looking Away, Absence, Yawning, and Multiple People.
+- **🌓 Unified Theme Engine**: Seamlessly switch between **Dark Mode (Midnight)**, **Light Mode (High Contrast)**, or **System Sync**.
+- **🔐 Security & Privacy**: 
+  - **Mandatory Login**: Strict authentication-first flow for all sessions.
+  - **Danger Zone**: Integrated tools for **Resetting History** and **Permanent Account Deletion**.
+- **📊 Professional Dashboard**: Real-time AI telemetry, distraction event logs, and persistent session history.
+- **🎨 Premium Aesthetics**: Modern design system with glassmorphism, responsive sidebar, and high-performance micro-animations.
 
 ---
 
@@ -29,10 +28,12 @@ A high-performance, real-time AI vision application designed to eliminate worksp
 ```mermaid
 graph TD
     User((User)) -->|Video Feed| Browser[React Frontend]
-    Browser -->|Inference| TM[Teachable Machine Model]
-    Browser -->|Session Logic| Timer[Focus Timer]
-    Browser -->|Log Event| API[Express Backend]
-    API -->|Persistence| DB[(JSON Storage)]
+    Browser -->|Local Inference| TM[Teachable Machine v1/v2]
+    Browser -->|Cloud Inference| RF[Roboflow AI API]
+    TM -->|Filter Logic| Logic[6-Point Analyzer]
+    RF -->|Filter Logic| Logic
+    Logic -->|Telemetry| Dashboard[Focus Dashboard]
+    Dashboard -->|Session Persistence| API[Express Backend]
 ```
 
 ---
@@ -59,17 +60,17 @@ npm run dev
 ## 🛠️ Tech Stack
 
 - **Frontend**: Vite, React, Lucide, Recharts, Framer Motion
-- **AI Engine**: TensorFlow.js, @teachablemachine/image
+- **AI Engines**: TensorFlow.js, Teachable Machine, Roboflow Inference API
 - **Backend**: Node.js, Express, Cors, Morgan
-- **Styling**: Vanilla CSS (Unified Theme Variable Engine)
+- **Styling**: Vanilla CSS (Thematic Variable System)
 
 ---
 
 ## 📝 Usage Tips
-- Click **"Initialize Guard"** to start the webcam and surveillance.
-- Go to **Settings > Appearance** to switch between Frosted Ice (Light) and Midnight (Dark) themes.
-- Use the **Identity** section to set your avatar and verify your email via the OTP system.
-- Your session history is automatically saved to `./data/sessions.json` when you stop a session.
+- **Initialize Guard**: Click to start the webcam. The app will auto-load the dual AI models (v1/v2).
+- **Appearance Settings**: Control theme and accent colors from the **Settings > Appearance** tab.
+- **Danger Zone**: Use the tools at the bottom of the Settings page to manage your data privacy.
+- **Login-First**: Refreshing the page or starting a new session will always require a secure login.
 
 ---
 

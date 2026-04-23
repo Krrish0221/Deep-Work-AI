@@ -256,7 +256,7 @@ const AppContent = () => {
               <kbd className="search-kbd">⌘K</kbd>
             </div>
             
-            <div className="top-actions">
+            <div className="header-actions">
               <div className="notification-wrapper">
                 <div 
                   className={`action-btn glass-effect ${showNotifications ? 'active-bell' : ''} ${hasUnread ? 'has-unread' : ''}`}
