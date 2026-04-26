@@ -55,10 +55,10 @@ export const SettingsProvider = ({ children }) => {
   const [modelV2Posture, setModelV2Posture] = useState(null);
   
   // Model URLs
-  const [teachableUrl, setTeachableUrl] = useState('https://teachablemachine.withgoogle.com/models/-YCasu5Jm/'); // TM v1
+  const [teachableUrl, setTeachableUrl] = useState('https://teachablemachine.withgoogle.com/models/I5aX6pvIg/'); // New V1 (Old V2)
   const [tmV2Urls, setTmV2Urls] = useState({
-    image: 'https://teachablemachine.withgoogle.com/models/I5aX6pvIg/', // The Image project
-    posture: 'https://teachablemachine.withgoogle.com/models/d0Mt0RicD/' // The Pose project
+    image: 'https://teachablemachine.withgoogle.com/models/9RPc8OJ9D/', // New V2
+    posture: 'https://teachablemachine.withgoogle.com/models/d0Mt0RicD/' 
   });
 
   const [roboflowConfig, setRoboflowConfig] = useState({
