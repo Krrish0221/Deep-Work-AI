@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [distractedTime, setDistractedTime] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
+  const [pomodoroCount, setPomodoroCount] = useState(0);
   
   // Live Detection Stats
   const [status, setStatus] = useState("Idle");
@@ -261,6 +262,9 @@ const Dashboard = () => {
     window.speechSynthesis.cancel();
 
     try {
+      if (sessionConfig?.technique === 'Pomodoro') {
+        setPomodoroCount(prev => prev + 1);
+      }
       const saved = JSON.parse(localStorage.getItem('focus_history') || '[]');
       const newHistory = [report, ...saved].slice(0, 50);
       localStorage.setItem('focus_history', JSON.stringify(newHistory));
@@ -273,9 +277,18 @@ const Dashboard = () => {
       logTimelineEvent('break');
       setSessionState('break');
       setEscalationLevel(0);
+      
+      // Auto-set break timer for Pomodoro
+      if (sessionConfig?.technique === 'Pomodoro') {
+        const isLongBreak = pomodoroCount > 0 && (pomodoroCount + 1) % 4 === 0;
+        setRemainingTime(isLongBreak ? 15 * 60 : 5 * 60);
+      }
     } else {
       logTimelineEvent('focus');
       setSessionState('focus');
+      if (sessionConfig?.duration > 0) {
+        setRemainingTime(sessionConfig.duration * 60);
+      }
     }
   };
 
@@ -285,25 +298,27 @@ const Dashboard = () => {
         <div style={{
           position: 'fixed',
           top: 0, left: 0, bottom: 0, right: 0,
-          background: 'rgba(100, 0, 0, 0.8)',
+          background: 'rgba(100, 0, 0, 0.85)', // Deep red tint
           zIndex: 2147483647,
           display: 'grid',
           placeItems: 'center',
-          padding: '20px'
+          padding: '20px',
+          backdropFilter: 'blur(10px)'
         }}>
-          <div style={{
-            background: '#ffffff',
+          <div className="glass-effect" style={{
+            background: 'var(--bg-card)',
             padding: '40px 30px',
-            borderRadius: '24px',
+            borderRadius: '32px',
             textAlign: 'center',
-            maxWidth: '400px',
+            maxWidth: '420px',
             width: '100%',
-            color: '#000000',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+            color: 'var(--text-primary)',
+            boxShadow: '0 30px 100px rgba(0,0,0,0.6)',
+            border: '2px solid var(--status-danger)'
           }}>
-            <div style={{ fontSize: '50px', marginBottom: '15px' }}>⚠️</div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '900', marginBottom: '10px', color: '#000' }}>Refocus Required</h2>
-            <p style={{ color: '#666', fontSize: '1rem', marginBottom: '15px', fontWeight: '600' }}>
+            <div style={{ fontSize: '60px', marginBottom: '15px' }}>🚨</div>
+            <h2 style={{ fontSize: '1.85rem', fontWeight: '900', marginBottom: '8px' }}>Refocus Required</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '20px', fontWeight: '600' }}>
                {status.includes('Phone') ? '📱 Phone' : 
                 status.includes('Away') ? '👤 Away' : 
                 status.includes('Looking') ? '👀 Looking Away' : '⚠️ Distraction'} detected
@@ -312,29 +327,32 @@ const Dashboard = () => {
             <div style={{ 
               display: 'inline-flex', 
               alignItems: 'center', 
-              gap: '8px',
+              gap: '10px',
               background: 'rgba(239, 68, 68, 0.1)',
-              padding: '6px 16px',
+              padding: '8px 20px',
               borderRadius: '99px',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
+              border: '1px solid var(--status-danger)',
               marginBottom: '2.5rem',
-              color: '#ef4444',
-              fontWeight: '700',
-              fontSize: '0.9rem'
+              color: 'var(--status-danger)',
+              fontWeight: '800',
+              fontSize: '1rem'
             }}>
-              <span style={{ width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%', animation: 'pulse 1s infinite' }}></span>
-              {Math.floor(distractionSeconds.current / 60).toString().padStart(2, '0')}:{(distractionSeconds.current % 60).toString().padStart(2, '0')} distracted
+              <span className="pulse-red-dot" style={{ width: '10px', height: '10px', background: 'var(--status-danger)', borderRadius: '50%' }}></span>
+              {Math.floor(distractionSeconds.current / 60).toString().padStart(2, '0')}:{(distractionSeconds.current % 60).toString().padStart(2, '0')} DISTRACTED
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <button 
+                className="btn-primary-v3"
                 onClick={() => { setEscalationLevel(0); distractionSeconds.current = 0; }}
-                style={{ background: '#22c55e', color: '#fff', padding: '16px', borderRadius: '12px', border: 'none', fontWeight: '800', fontSize: '18px', cursor: 'pointer' }}
+                style={{ width: '100%', padding: '18px', fontSize: '1.1rem', background: 'var(--status-good)' }}
               >
-                ✅ I'm Back
+                ✅ I'M BACK
               </button>
               <button 
+                className="btn-secondary-v3"
                 onClick={toggleBreak}
-                style={{ background: '#f3f4f6', color: '#374151', padding: '14px', borderRadius: '12px', border: '1px solid #d1d5db', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+                style={{ width: '100%', padding: '15px', justifyContent: 'center' }}
               >
                 ☕ Take 2min Break
               </button>
@@ -389,6 +407,7 @@ const Dashboard = () => {
             onToggle={() => sessionActive ? endSession() : setShowStartModal(true)}
             onBreak={toggleBreak}
             config={sessionConfig}
+            pomodoroCount={pomodoroCount}
           />
         </div>
       </div>

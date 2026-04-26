@@ -28,7 +28,7 @@ const formatDigits = (totalSeconds) => {
     .join(':');
 };
 
-export const FocusTimerHero = ({ remainingTime, elapsedTime, sessionActive, sessionState, status, onToggle, onBreak, config }) => {
+export const FocusTimerHero = ({ remainingTime, elapsedTime, sessionActive, sessionState, status, onToggle, onBreak, config, pomodoroCount }) => {
   const formatDigits = (totalSeconds) => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -56,6 +56,16 @@ export const FocusTimerHero = ({ remainingTime, elapsedTime, sessionActive, sess
 
   const progress = config?.duration ? ((elapsedTime / (config.duration * 60)) * 100) : 0;
 
+  const renderPomodoroProgress = () => {
+    const dots = [];
+    for (let i = 0; i < 4; i++) {
+      dots.push(i < (pomodoroCount % 4) ? '🍅' : '○');
+    }
+    return <div className="pomodoro-dots" style={{ display: 'flex', gap: '4px', fontSize: '1.2rem' }}>{dots.join('')}</div>;
+  };
+
+  const isLongBreak = sessionState === 'break' && pomodoroCount > 0 && pomodoroCount % 4 === 0;
+
   return (
     <div className="timer-hero-container-v2 glass-effect">
       <div className="card-top-label" style={{ justifyContent: 'space-between' }}>
@@ -63,14 +73,19 @@ export const FocusTimerHero = ({ remainingTime, elapsedTime, sessionActive, sess
           <Target size={14} />
           <span>{config?.technique || 'FOCUS TIMER'}</span>
         </div>
-        {sessionActive && config?.technique === 'Pomodoro' && (
-          <div className="pomodoro-dots">🍅🍅○○</div>
-        )}
+        {config?.technique === 'Pomodoro' && renderPomodoroProgress()}
       </div>
 
       <div className="timer-header-v3" style={{ marginTop: '1.25rem' }}>
         {config?.taskName && <p className="working-on-txt" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Working on: {config.taskName}</p>}
-        <span className="state-badge-v3" style={{ background: stateColor }}>{stateLabel}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="state-badge-v3" style={{ background: stateColor }}>{stateLabel}</span>
+          {sessionState === 'break' && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700' }}>
+               {isLongBreak ? '🏠 LONG BREAK' : '⚡ SHORT BREAK'}
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="timer-display-v3" style={{ padding: '1.5rem 0' }}>
